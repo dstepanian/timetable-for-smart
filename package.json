@@ -1,0 +1,24 @@
+{
+  "name": "timetable-for-smart",
+  "version": "1.0.0",
+  "description": "Room timetable, booking and room changes for the SMART Center, on Google Sheets and Apps Script",
+  "private": true,
+  "license": "MIT",
+  "author": "David Stepanyan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dstepanian/timetable-for-smart.git"
+  },
+  "scripts": {
+    "test": "npm run test:server && npm run test:ui",
+    "test:server": "node test/server.test.js",
+    "test:ui": "node test/ui.test.js",
+    "screenshots": "node scripts/screenshots.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

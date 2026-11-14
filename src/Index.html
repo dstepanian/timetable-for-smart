@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Տարածքների օրացույց</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&family=Noto+Serif+Armenian:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<script>try{var t0=JSON.parse(localStorage.getItem('roomcal')||'{}').theme;if(t0==='light'||t0==='dark')document.documentElement.setAttribute('data-theme',t0);}catch(e){}</script>
+<style>
+:root{
+  --ground:#EDF0F6; --surface:#FFFFFF; --surface-2:#F5F7FB; --ink:#131D36; --muted:#5B6680; --faint:#8C96AA; --line:#DCE2EC;
+  --busy:#E9ECFB; --busy-ink:#27337C; --free:#E1F3E9; --free-ink:#16664A;
+  --sun:#E28B22; --sun-soft:#FCEFDC; --accent:#3140B8; --accent-ink:#FFFFFF;
+  --hatch:#E4E8F0; --shadow:0 1px 2px rgba(19,29,54,.05),0 6px 20px rgba(19,29,54,.06);
+  --bad:#B03A2E; --bad-soft:#FBE7E4;
+  --f-body:"Noto Sans Armenian",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-display:"Noto Serif Armenian",Georgia,"Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+:root{color-scheme:light}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0B1120; --surface:#131B2D; --surface-2:#172136; --ink:#E5EAF4; --muted:#9BA7BE; --faint:#6C7890; --line:#253049;
+    --busy:#1D2553; --busy-ink:#CBD2FF; --free:#10332A; --free-ink:#8EE0BA;
+    --sun:#F2A64C; --sun-soft:#3A2A15; --accent:#8D98FF; --accent-ink:#0B1120;
+    --hatch:#1A2336; --shadow:none;
+    --bad:#FF8F80; --bad-soft:#3A1B1A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0B1120; --surface:#131B2D; --surface-2:#172136; --ink:#E5EAF4; --muted:#9BA7BE; --faint:#6C7890; --line:#253049;
+  --busy:#1D2553; --busy-ink:#CBD2FF; --free:#10332A; --free-ink:#8EE0BA;
+  --sun:#F2A64C; --sun-soft:#3A2A15; --accent:#8D98FF; --accent-ink:#0B1120;
+  --hatch:#1A2336; --shadow:none;
+  --bad:#FF8F80; --bad-soft:#3A1B1A;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);font:14px/1.45 var(--f-body);-webkit-font-smoothing:antialiased;padding:20px clamp(16px,3vw,36px) 40px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;margin-bottom:18px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.1;margin:4px 0 0;text-wrap:balance}
+.weeknav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;display:grid;place-items:center}
+.iconbtn:hover{border-color:var(--accent)}
+.iconbtn svg{width:18px;height:18px;display:block}
+.iconbtn.theme{color:var(--ink)}
+.weeklabel{min-width:190px;text-align:center;padding:0 6px}
+.weeklabel b{display:block;font-family:var(--f-mono);font-size:17px;font-weight:700;letter-spacing:.01em}
+.source{display:inline-block;margin-top:2px;font-size:12px;color:var(--muted)}
+.source.base{color:var(--sun);font-weight:600}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:999px;padding:8px 14px;font-weight:600;font-size:13px}
+.ghost:hover{background:var(--surface)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);font-weight:600}
+.stat .v{font-size:22px;font-weight:700;line-height:1.2}
+.stat .s{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.stat.live{border-color:var(--sun);background:linear-gradient(180deg,var(--sun-soft),var(--surface) 70%)}
+.meter{display:block;height:6px;border-radius:99px;background:var(--line);overflow:hidden;min-width:40px}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.stat .meter{margin-top:6px}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:999px;padding:7px 14px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--ground)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;flex:1;justify-content:flex-end}
+.tools input,.tools select{height:38px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:0 12px;min-width:0}
+.tools input{width:min(260px,100%)}
+/* filter row: rooms dropdown, the rooms picked so far, colour legend */
+.frow{position:relative;display:flex;align-items:center;gap:8px;margin-bottom:12px;min-width:0}
+.fbtn{display:inline-flex;align-items:center;gap:7px;height:34px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 12px 0 14px;font-size:13px;font-weight:600;color:var(--ink);flex:none;white-space:nowrap}
+.fbtn:hover{border-color:var(--muted)}
+.fbtn[aria-expanded="true"]{border-color:var(--ink)}
+.fbtn .cv{font-size:10px;color:var(--muted);transition:transform .15s}
+.fbtn[aria-expanded="true"] .cv{transform:rotate(180deg)}
+.fbtn .n{background:var(--ink);color:var(--ground);border-radius:999px;font-size:11px;line-height:18px;padding:0 7px}
+.fbtn .sws{display:inline-flex;gap:2px}
+.fbtn .sws i{width:8px;height:8px;border-radius:2px;background:var(--tint)}
+.frow .push{margin-left:auto}
+.chips{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;height:30px;padding:0 5px 0 9px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;font-weight:500;flex:none;white-space:nowrap}
+.chip .x{font-size:15px;line-height:1;color:var(--muted);width:18px;height:18px;display:inline-grid;place-items:center;border-radius:50%}
+.chip:hover .x{background:var(--line);color:var(--ink)}
+.pop{position:absolute;top:calc(100% + 6px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.18);padding:12px}
+#roomPop{left:0;width:min(640px,100%)}
+#legend{right:0;width:min(340px,100%)}
+.pophd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 8px;font-size:12px;font-weight:600;color:var(--muted)}
+.linkbtn{border:0;background:transparent;color:var(--accent);font-weight:600;font-size:12.5px;padding:2px 4px;border-radius:6px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:2px}
+.ropt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:13px;cursor:pointer;min-width:0}
+.ropt:hover{background:var(--ground)}
+.ropt input{margin:0;accent-color:var(--ink);flex:none}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none;display:inline-block;box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 22%,transparent)}
+
+/* legend & events */
+.legend{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.legend .lg{display:flex;align-items:center;gap:8px}
+.sw{width:13px;height:13px;border-radius:3px;border:1px solid var(--line);background:var(--tint);flex:none}
+.events{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.event{background:var(--sun-soft);border:1px solid color-mix(in srgb,var(--sun) 45%,transparent);border-radius:8px;padding:4px 10px;font-size:12.5px;display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+.event.past{opacity:.55}
+.event .when{font-family:var(--f-mono);font-weight:700;color:var(--sun)}
+.event.mark{background:color-mix(in srgb,var(--tint) 26%,transparent);border-color:color-mix(in srgb,var(--tint) 65%,transparent)}
+.event.mark .when{color:var(--ink)}
+.event .room{color:var(--muted)}
+
+/* time grid */
+.scroll{overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.dgrid{display:grid;grid-template-columns:repeat(7,minmax(168px,1fr));gap:8px;min-width:1220px;align-items:start}
+.dcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.th{padding:6px 4px 8px;border-bottom:2px solid var(--line)}
+.th .dn{display:block;font-weight:700;font-size:13.5px}
+.th .dd{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.th.today{border-bottom-color:var(--sun)}
+.th.today .dd{color:var(--sun);font-weight:700}
+.cell{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 9px 9px;min-height:64px}
+.cell.today{background:color-mix(in srgb,var(--sun-soft) 45%,var(--surface))}
+.cell.now{border:2px solid var(--sun);padding:7px 8px 8px}
+.cell.none{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--hatch) 6px 7px);border-style:dashed;min-height:0;color:var(--faint);font-size:12.5px}
+.chead{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.ctime{font-family:var(--f-mono);font-weight:700;font-size:14px}
+.count{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.count b{color:var(--ink);font-size:14px}
+.chead .meter{flex:1}
+.livetag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sun)}
+.blist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.blist li{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;font-size:12.5px;line-height:1.35;padding:2px 0}
+.blist li .dot{transform:translateY(-1px)}
+.blist b{font-weight:600;white-space:nowrap}
+.blist span{color:var(--muted);overflow-wrap:anywhere}
+.empty{margin:2px 0 0;font-size:12.5px;color:var(--free-ink);font-weight:600}
+.lines{display:flex;flex-direction:column;gap:2px;width:100%;margin-top:1px}
+.ln{display:flex;gap:6px;align-items:baseline}
+.ln time{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--ink);opacity:.72;white-space:nowrap}
+.pill .lines{gap:1px}
+.pill.notime{grid-template-columns:1fr}
+.blist li.tinted{background:color-mix(in srgb,var(--tint) 32%,transparent);border-radius:6px;padding:3px 6px;margin:0 -5px}
+.evtag{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);background:color-mix(in srgb,var(--tint) 60%,transparent);border-radius:99px;padding:1px 6px}
+mark{background:color-mix(in srgb,var(--sun) 35%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+
+/* place table */
+.ptable{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px}
+.ptable th,.ptable td{border-bottom:1px solid var(--line);vertical-align:top;text-align:left;padding:10px 8px}
+.ptable thead th{position:sticky;top:0;background:var(--ground);z-index:2;font-size:13.5px;border-bottom:2px solid var(--line)}
+.ptable thead th.today{border-bottom-color:var(--sun)}
+.ptable thead .dd{display:block;font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:500}
+.ptable thead th.today .dd{color:var(--sun);font-weight:700}
+.ptable tbody tr{background:var(--surface)}
+.ptable tbody tr:hover{background:var(--surface-2)}
+.ptable th.room{position:sticky;left:0;z-index:1;background:inherit;width:230px;min-width:200px;border-right:1px solid var(--line)}
+.ptable tbody tr:first-child td,.ptable tbody tr:first-child th{border-top:1px solid var(--line)}
+.rbtn{border:0;background:none;padding:0;display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;text-align:left}
+.rbtn:hover .rname{text-decoration:underline}
+.rdesc{display:block;font-size:12px;color:var(--muted);font-weight:400;margin:3px 0 8px;line-height:1.35}
+.util{display:flex;align-items:center;gap:8px}
+.util .meter{flex:1}
+.util .mono{font-size:12px;color:var(--muted)}
+td.today{background:color-mix(in srgb,var(--sun-soft) 40%,transparent)}
+.pills{display:flex;flex-direction:column;gap:4px}
+.pill{display:grid;grid-template-columns:40px 1fr;gap:6px;align-items:baseline;border-radius:7px;padding:4px 7px;font-size:12.5px;line-height:1.3}
+.pill time{font-family:var(--f-mono);font-size:11.5px;font-weight:700}
+.pill.busy{background:var(--busy);color:var(--busy-ink)}
+.pill.free{background:transparent;border:1px dashed var(--line);color:var(--faint)}
+.pill.free time{color:var(--faint)}
+.pill.dim{opacity:.35}
+.pill.tinted{background:color-mix(in srgb,var(--tint) 32%,transparent);color:var(--ink)}
+.pill.tinted time{color:var(--ink)}
+.pill.now{box-shadow:inset 0 0 0 2px var(--sun)}
+
+/* free finder */
+.picker{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.pickrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pickrow .lbl{font-size:12px;font-weight:600;color:var(--muted);min-width:56px}
+.pick{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 12px;font-weight:600;font-size:13px}
+.pick small{display:block;font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--muted)}
+.pick.on{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.pick.on small{color:inherit;opacity:.75}
+.pick:disabled{opacity:.4;cursor:default}
+.freehead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
+.freehead h2{margin:0;font-size:20px;font-family:var(--f-display)}
+.freehead span{color:var(--muted)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.fcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.fcard .t{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.fcard .d{font-size:12.5px;color:var(--muted)}
+.fcard .n{font-size:12.5px;margin-top:4px;padding-top:6px;border-top:1px dashed var(--line);color:var(--free-ink);font-weight:600}
+.fcard .n.soon{color:var(--sun)}
+details.busyfold{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+details.busyfold summary{cursor:pointer;font-weight:600}
+details.busyfold ul{margin:10px 0 2px}
+
+/* mobile day list */
+.daytabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+.daytabs .pick{flex:none}
+.stack{display:flex;flex-direction:column;gap:10px}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rcard .rdays{display:grid;grid-template-columns:44px 1fr;gap:6px 10px;margin-top:10px;font-size:13px}
+.rcard .rdays .dl{font-weight:700;color:var(--muted);padding-top:4px}
+.rcard .rdays .dl.today{color:var(--sun)}
+
+.status{padding:40px 0;text-align:center;color:var(--muted)}
+.status.err{color:#C0392B}
+footer{margin-top:24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:12.5px}
+footer button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12.5px}
+
+/* booking */
+.primary{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:8px 16px;font-weight:700;font-size:13px;line-height:1.2}
+.primary:hover{filter:brightness(1.08)}
+.primary:disabled{opacity:.5;cursor:default;filter:none}
+.ghost.sm,.primary.sm{padding:5px 12px;font-size:12.5px}
+.ghost.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.seg .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:99px;background:var(--sun);color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:700}
+.addbk{border:1px dashed var(--line);background:transparent;border-radius:7px;width:24px;height:22px;line-height:1;font-size:15px;font-weight:600;color:var(--muted);flex:none;padding:0}
+.addbk:hover{border:1px solid var(--accent);color:var(--accent)}
+.blist li.booked{background:color-mix(in srgb,var(--accent) 10%,transparent);box-shadow:inset 3px 0 0 var(--accent);border-radius:6px;padding:3px 6px 3px 8px;margin:0 -5px;cursor:pointer}
+.blist li.booked.wait{background:color-mix(in srgb,var(--sun) 13%,transparent);box-shadow:inset 3px 0 0 var(--sun)}
+.blist li.booked:hover{background:color-mix(in srgb,var(--accent) 17%,transparent)}
+.bktag{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:99px;padding:0 6px;white-space:nowrap}
+.wait .bktag,.bktag.wait{color:var(--sun);border-color:color-mix(in srgb,var(--sun) 55%,transparent)}
+.bktag.cancel,.bktag.reject{color:var(--muted);border-color:var(--line)}
+button.pill{border:0;font:inherit;color:inherit;text-align:left;width:100%;cursor:pointer}
+.pill.booked{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--ink);box-shadow:inset 3px 0 0 var(--accent);grid-template-columns:1fr}
+.pill.booked.wait{background:color-mix(in srgb,var(--sun) 14%,transparent);box-shadow:inset 3px 0 0 var(--sun)}
+button.pill.free{background:transparent;border:1px dashed var(--line)}
+button.pill.free:hover{border:1px solid var(--accent);color:var(--accent)}
+button.pill.free:hover time{color:var(--accent)}
+.fcard .act{margin-top:8px;align-self:flex-start}
+.fcard .n.bk{color:var(--accent)}
+
+dialog.dlg{border:1px solid var(--line);border-radius:16px;padding:0;background:var(--surface);color:var(--ink);width:min(540px,calc(100vw - 24px));max-height:calc(100vh - 24px);box-shadow:0 20px 60px rgba(10,16,32,.3)}
+dialog.dlg::backdrop{background:rgba(11,17,32,.5)}
+.dlg .body{padding:18px 20px 18px;display:flex;flex-direction:column;gap:12px}
+.dlg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.dlg-head h2{margin:0;font-family:var(--f-display);font-size:21px;line-height:1.2}
+.dlg-head p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+.xbtn{border:0;background:transparent;font-size:24px;line-height:1;color:var(--muted);width:34px;height:34px;border-radius:50%;flex:none;margin:-4px -6px 0 0}
+.xbtn:hover{background:var(--surface-2);color:var(--ink)}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.full{grid-column:1 / -1}
+.fld > span{font-size:12px;font-weight:600;color:var(--muted)}
+.fld input,.fld select,.fld textarea{height:40px;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:0 10px;min-width:0;width:100%}
+.fld textarea{height:64px;padding:8px 10px;resize:vertical;font:inherit}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.trow{display:flex;align-items:center;gap:6px}
+.trow select{flex:1}
+.daybox{border:1px solid var(--line);border-radius:12px;padding:10px 12px 10px;background:var(--surface-2)}
+.daybox .dt{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.tl{padding:0 12px}
+.ticks{position:relative;height:15px;font-family:var(--f-mono);font-size:10.5px;color:var(--faint)}
+.ticks span{position:absolute;transform:translateX(-50%);top:0}
+.timeline{position:relative;height:28px;border-radius:7px;background:var(--free);overflow:hidden}
+.timeline .b{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--busy-ink) 22%,var(--busy));border-left:1px solid var(--surface-2)}
+.timeline .b.bk{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--accent) 34%,transparent) 0 5px,color-mix(in srgb,var(--accent) 16%,transparent) 5px 10px)}
+.timeline .sel{position:absolute;top:3px;bottom:3px;border:2px solid var(--free-ink);border-radius:6px;min-width:4px}
+.timeline .sel.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.busylist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.busylist li{display:flex;gap:8px;align-items:baseline}
+.busylist time{font-family:var(--f-mono);font-size:11.5px;font-weight:700;white-space:nowrap}
+.busylist .bk{color:var(--accent)}
+.busylist .none{color:var(--free-ink);font-weight:600}
+.avail{font-size:13px;font-weight:600;border-radius:10px;padding:9px 12px;line-height:1.4}
+.avail.ok{background:var(--free);color:var(--free-ink)}
+.avail.bad{background:var(--bad-soft);color:var(--bad)}
+.avail.info{background:var(--surface-2);color:var(--muted)}
+.fine{margin:0;font-size:12px;color:var(--faint)}
+.dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;align-items:center}
+.dlg-foot .fine{margin-right:auto}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:6px 12px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted);font-weight:600;font-size:12.5px;padding-top:1px}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.confirm{border:1px solid color-mix(in srgb,var(--bad) 40%,var(--line));background:var(--bad-soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-weight:600}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);opacity:0;background:var(--ink);color:var(--ground);padding:10px 18px;border-radius:999px;font-weight:600;font-size:13.5px;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%)}
+
+.bkhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:2px 0 14px}
+.bkhead h2{margin:0;font-family:var(--f-display);font-size:21px}
+.bksec{margin-bottom:20px}
+.bksec h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px;font-weight:700}
+.bkrow{display:grid;grid-template-columns:112px 104px minmax(0,1fr) auto;gap:4px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.bkrow.wait{border-color:color-mix(in srgb,var(--sun) 60%,var(--line));background:linear-gradient(90deg,var(--sun-soft),var(--surface) 40%)}
+.bkrow.off{opacity:.62}
+.bkrow .bd{font-weight:700}
+.bkrow .bd small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.bkrow .bt{font-family:var(--f-mono);font-weight:700}
+.bkrow .bw{min-width:0}
+.bkrow .bw b{display:inline-flex;align-items:center;gap:6px;margin-right:6px}
+.bkrow .bw .p{display:block;color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.bkrow .ba{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.warn{color:var(--bad);font-size:12px;font-weight:600;display:block;margin-top:2px}
+.bkempty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--muted);text-align:center}
+/* «Իմ ծրագիրը» */
+.proghead{display:flex;align-items:flex-end;gap:10px 16px;flex-wrap:wrap;margin:2px 0 14px}
+.proghead .fld{width:min(380px,100%)}
+.proghead .fld select{background:var(--surface)}
+.proghead .fine{padding-bottom:12px}
+.pday{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px 6px;margin-bottom:8px;box-shadow:var(--shadow)}
+.pday.today{border-color:var(--sun);background:linear-gradient(180deg,var(--sun-soft),var(--surface) 55%)}
+.pdh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.pdh b{font-size:14.5px}
+.pdh .mono{font-size:12px;color:var(--muted)}
+.pdh .n{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.prow{display:grid;grid-template-columns:108px 86px minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;padding:7px 0;font-size:13.5px}
+.prow .pa:empty{display:none}
+.prow .pa .ghost{white-space:nowrap}
+.prow + .prow{border-top:1px dashed var(--line)}
+.prow .pt{font-family:var(--f-mono);font-weight:700;white-space:nowrap}
+.prow .pg{font-weight:700;overflow-wrap:anywhere}
+.prow .pr{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;min-width:0}
+.prow .pr .dot{transform:translateY(-1px)}
+.prow .pr small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.prow.tinted{background:color-mix(in srgb,var(--tint) 26%,transparent);border-radius:8px;padding:7px 8px;margin:2px -8px}
+.prow.booked{cursor:pointer;background:color-mix(in srgb,var(--accent) 9%,transparent);box-shadow:inset 3px 0 0 var(--accent);border-radius:8px;padding:7px 8px 7px 10px;margin:2px -8px}
+.prow.booked:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.prow.booked.wait{background:color-mix(in srgb,var(--sun) 13%,transparent);box-shadow:inset 3px 0 0 var(--sun)}
+.pfree{margin:2px 0 18px}
+.pgtab{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:baseline;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.pgtab > b{font-size:13.5px;white-space:nowrap}
+.pgtab .when{display:flex;flex-wrap:wrap;gap:4px 6px}
+.pgtab .when > span{background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12.5px}
+@media (max-width:760px){
+  body{padding-top:14px}
+  .weeknav{width:100%}
+  .weeklabel{min-width:0;flex:1}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stat{padding:10px 12px}
+  .stat.live{grid-column:1 / -1}
+  .stat.live ~ .stat:last-child:nth-child(4){grid-column:1 / -1}
+  .stat .v{font-size:17px}
+  .seg{display:flex;width:100%;flex-wrap:nowrap;overflow-x:auto}
+  .seg button{flex:1 0 auto;white-space:nowrap;padding:7px 8px;font-size:13px}
+  .tools{justify-content:stretch;width:100%}
+  .tools input,.tools select{flex:1;width:auto}
+  .frow{gap:6px}
+  .fbtn{padding:0 10px 0 12px}
+  #roomPop,#legend{left:0;right:0;width:auto}
+  .rgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .weeknav .primary{order:-1;width:100%}
+  .form{grid-template-columns:1fr}
+  .bkrow{grid-template-columns:auto 1fr;gap:4px 12px}
+  .bkrow .bw,.bkrow .ba{grid-column:1 / -1}
+  .bkrow .ba{justify-content:flex-start}
+  .dlg .body{padding:16px}
+  .prow{grid-template-columns:auto minmax(0,1fr)}
+  .prow .pr,.prow .pa{grid-column:1 / -1}
+  .pday{padding:10px 12px 6px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .cell,.pill,.fcard,.chip,.pick{transition:background-color .15s,border-color .15s}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <div class="eyebrow">Շաբաթական զբաղվածություն</div>
+    <h1>Տարածքների օրացույց</h1>
+  </div>
+  <nav class="weeknav" aria-label="Շաբաթի ընտրություն">
+    <button class="iconbtn" id="prevWeek" aria-label="Նախորդ շաբաթ">&#8249;</button>
+    <div class="weeklabel"><b id="weekRange">…</b><span id="weekSource" class="source"></span></div>
+    <button class="iconbtn" id="nextWeek" aria-label="Հաջորդ շաբաթ">&#8250;</button>
+    <button class="ghost" id="thisWeek">Այս շաբաթ</button>
+    <button class="iconbtn theme" id="themeBtn" type="button" aria-label="Թեմա"></button>
+    <button class="primary" id="bookBtn" type="button" hidden>+ Ամրագրել</button>
+  </nav>
+</header>
+
+<section class="stats" id="stats" aria-live="polite"></section>
+
+<section class="controls">
+  <div class="seg" role="tablist" aria-label="Դիտում">
+    <button role="tab" data-view="time" id="tab-time">Ըստ ժամի</button>
+    <button role="tab" data-view="place" id="tab-place">Ըստ տարածքի</button>
+    <button role="tab" data-view="free" id="tab-free">Ազատ տարածքներ</button>
+    <button role="tab" data-view="prog" id="tab-prog">Իմ ծրագիրը</button>
+    <button role="tab" data-view="book" id="tab-book" hidden>Ամրագրումներ</button>
+  </div>
+  <div class="tools">
+    <input id="q" type="search" placeholder="Որոնել դասընթաց կամ տարածք…" aria-label="Որոնում">
+    <select id="sort" aria-label="Դասավորել">
+      <option value="order">Ցանկի հերթականությամբ</option>
+      <option value="az">Այբբենական (Ա-Ֆ)</option>
+      <option value="busy">Ամենազբաղվածը վերևում</option>
+      <option value="free">Ամենաազատը վերևում</option>
+    </select>
+  </div>
+</section>
+<div class="frow" id="frow">
+  <button type="button" class="fbtn" id="roomBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="roomPop">Տարածքներ</button>
+  <div class="chips" id="roomChips" aria-label="Ընտրված տարածքներ"></div>
+  <button type="button" class="fbtn push" id="legendBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="legend" hidden>Գույներ</button>
+  <div class="pop" id="roomPop" role="dialog" aria-label="Տարածքներ" hidden></div>
+  <div class="pop legend" id="legend" role="dialog" aria-label="Գույները" hidden></div>
+</div>
+
+<div id="events" class="events"></div>
+<main id="view"><div class="status">Բեռնվում է…</div></main>
+
+<footer>
+  <span id="updated"></span>
+  <button id="refresh">Թարմացնել</button>
+  <span id="who"></span>
+</footer>
+
+<dialog class="dlg" id="bkDlg" aria-labelledby="bkTitle">
+  <form class="body" id="bkForm" novalidate>
+    <div class="dlg-head">
+      <div><h2 id="bkTitle">Ամրագրել տարածք</h2><p id="bkWho"></p></div>
+      <button type="button" class="xbtn" data-close aria-label="Փակել">&times;</button>
+    </div>
+    <div class="form">
+      <label class="fld full"><span>Տարածք</span><select id="bkRoom"></select></label>
+      <label class="fld full" id="bkGroupFld" hidden><span>Խումբ</span><select id="bkGroup"></select></label>
+      <label class="fld"><span>Օր</span><input id="bkDate" type="date"></label>
+      <div class="fld"><span>Ժամ</span><div class="trow"><select id="bkStart" aria-label="Սկիզբ"></select><span aria-hidden="true">-</span><select id="bkEnd" aria-label="Ավարտ"></select></div></div>
+      <label class="fld full"><span>Ինչի համար</span><input id="bkPurpose" maxlength="160" autocomplete="off" placeholder="Օր.՝ Ծնողական ժողով, անհատական պարապմունք"></label>
+      <label class="fld full"><span>Ձեր անունը</span><input id="bkName" maxlength="80" autocomplete="name"></label>
+    </div>
+    <div class="daybox" id="bkDay"></div>
+    <div class="avail info" id="bkAvail" role="status"></div>
+    <div class="dlg-foot">
+      <span class="fine" id="bkRule"></span>
+      <button type="button" class="ghost" data-close>Փակել</button>
+      <button type="submit" class="primary" id="bkSubmit">Ամրագրել</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="dlg" id="bvDlg" aria-labelledby="bvTitle">
+  <div class="body" id="bvBody"></div>
+</dialog>
+
+<dialog class="dlg" id="mvDlg" aria-labelledby="mvTitle">
+  <div class="body" id="mvBody"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var DAYS = ['Երկուշաբթի','Երեքշաբթի','Չորեքշաբթի','Հինգշաբթի','Ուրբաթ','Շաբաթ','Կիրակի'];
+  var SHORT = ['Երկ','Երք','Չրք','Հնգ','Ուրբ','Շբթ','Կիր'];
+  var SLOT_MIN = 120;
+  var mq = window.matchMedia('(max-width: 760px)');
+
+  var state = {
+    data: null, monday: mondayOf(new Date()), view: 'time', rooms: [], q: '', sort: 'order',
+    mDay: null, freeDay: null, freeTime: null, name: '', group: '', prog: ''
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem('roomcal') || '{}');
+    if (saved.view) state.view = state.savedView = saved.view;
+    /* a known instructor sees his tab while the data loads (startView checks again) */
+    if (saved.instr) { state.instr = true; state.view = 'prog'; }
+    if (saved.theme) state.theme = saved.theme;
+    if (saved.sort) state.sort = saved.sort;
+    if (saved.name) state.name = saved.name;
+    if (saved.group) state.group = saved.group;
+    if (saved.prog) state.prog = saved.prog;
+    if (Array.isArray(saved.rooms)) state.rooms = saved.rooms;
+  } catch (e) {}
+  function persist(){
+    try { localStorage.setItem('roomcal', JSON.stringify({view: state.view, sort: state.sort, rooms: state.rooms, theme: state.theme || '', name: state.name || '', group: state.group || '', prog: state.prog || '', instr: !!state.instr})); } catch (e) {}
+  }
+
+  /* ---------- helpers ---------- */
+  function $(id){ return document.getElementById(id); }
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function mondayOf(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+  function addDays(d, n){ var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function dm(d){ return pad(d.getDate()) + '.' + pad(d.getMonth() + 1); }
+  function mins(t){ return (+t.slice(0,2)) * 60 + (+t.slice(3,5)); }
+  function hm(m){ return pad(Math.floor(m / 60)) + ':' + pad(m % 60); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function hl(s){
+    var t = esc(s); if (!state.q) return t;
+    var i = String(s).toLowerCase().indexOf(state.q); if (i < 0) return t;
+    return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + state.q.length)) + '</mark>' + esc(s.slice(i + state.q.length));
+  }
+  function color(i, n){ return 'hsl(' + Math.round((i * 360 / Math.max(n, 1) + 212) % 360) + ' 62% 52%)'; }
+
+  /* A cell may hold several one-hour sessions, one per line, each able to start
+     with its own hour: "16:00 Աննա Օհանյան". Those become separate rows. */
+  var TIME_RE = /^(\d{1,2})[:\u0589.\u2236](\d{2})\s*(?:[-\u2013\u2014]\s*(\d{1,2})[:\u0589.\u2236](\d{2}))?\s*(.*)$/;
+  function cellHasTimes(s){
+    return String(s == null ? '' : s).split(/\n+/).some(function(ln){ return TIME_RE.test(ln.trim()); });
+  }
+  function cellText(s){
+    var lines = String(s == null ? '' : s).split(/\n+/).map(function(x){ return x.trim(); }).filter(Boolean);
+    var timed = lines.some(function(ln){ return TIME_RE.test(ln); });
+    if (lines.length < 2 && !timed) return hl(s);
+    return '<span class="lines">' + lines.map(function(ln){
+      var m = ln.match(TIME_RE);
+      if (m) {
+        var t = pad(+m[1]) + ':' + m[2] + (m[3] ? '-' + pad(+m[3]) + ':' + m[4] : '');
+        return '<span class="ln"><time>' + t + '</time><span>' + hl(m[5] || '') + '</span></span>';
+      }
+      return '<span class="ln">' + hl(ln) + '</span>';
+    }).join('') + '</span>';
+  }
+
+  /* Cell background colours come from the sheet; the Rules tab names them. */
+  function legendFor(c){
+    if (!c) return null;
+    var L = (state.data && state.data.legend) || [];
+    for (var i = 0; i < L.length; i++) {
+      if (String(L[i].color).toLowerCase() === String(c).toLowerCase()) return L[i];
+    }
+    /* a slightly different shade of a Rules colour still counts as that colour */
+    var rgb = hexRgb(c), best = null, bestD = 75;
+    if (!rgb) return null;
+    for (var j = 0; j < L.length; j++) {
+      var q = hexRgb(L[j].color);
+      if (!q) continue;
+      var d = Math.sqrt(Math.pow(rgb[0] - q[0], 2) + Math.pow(rgb[1] - q[1], 2) + Math.pow(rgb[2] - q[2], 2));
+      if (d < bestD) { bestD = d; best = L[j]; }
+    }
+    return best;
+  }
+  function hexRgb(h){
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(h || '').trim());
+    if (!m) return null;
+    var n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function hasEventRule(){
+    return ((state.data && state.data.legend) || []).some(function(l){ return /միջոցառ/i.test(l.label || ''); });
+  }
+  function isBlue(hex){
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    if (!m) return false;
+    var n = parseInt(m[1], 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return b > 110 && b - r > 35 && b - g > 20;
+  }
+  function isEvent(c){
+    if (!c) return false;
+    var l = legendFor(c);
+    if (l) return /միջոցառ/i.test(l.label || '');
+    return hasEventRule() ? false : isBlue(c);
+  }
+  function shortLabel(s){
+    s = String(s || '').split(/[՝:,։]/)[0].replace(/\s+/g, ' ').trim();
+    return s.length > 22 ? s.slice(0, 21) + '…' : s;
+  }
+  function tintAttrs(c){
+    if (!c) return {cls: '', style: '', tag: ''};
+    var l = legendFor(c);
+    if (!l && !isEvent(c)) return {cls: '', style: '', tag: ''};
+    var lab = shortLabel(l && l.label) || (isEvent(c) ? 'Միջոցառում' : '');
+    return {
+      cls: ' tinted',
+      style: ' style="--tint:' + c + '"',
+      tag: lab ? ' <em class="evtag">' + esc(lab) + '</em>' : ''
+    };
+  }
+
+  function week(){ return weekOf(state.monday); }
+  function weekOf(m){
+    var d = state.data;
+    if (!d) return null;
+    var w = null;
+    for (var i = 0; i < d.weeks.length; i++) {
+      if (d.weeks[i].day === m.getDate() && d.weeks[i].month === m.getMonth() + 1) { w = d.weeks[i]; break; }
+    }
+    var g = w ? w.grid : d.base;
+    if (!g) return null;
+    var n = g.rooms.length;
+    var rooms = g.rooms.map(function(r, i){ return {name: r.name, desc: r.desc, cells: r.cells, colors: r.colors || [], i: i, color: color(i, n), busy: r.cells.filter(Boolean).length}; });
+    var times = [];
+    g.slots.forEach(function(s){ if (times.indexOf(s.time) < 0) times.push(s.time); });
+    times.sort(function(a, b){ return mins(a) - mins(b); });
+    return {grid: g, source: w ? w.name : 'Total', isBase: !w, rooms: rooms, slots: g.slots, times: times};
+  }
+  function slotIndex(W, day, time){
+    for (var i = 0; i < W.slots.length; i++) if (W.slots[i].day === day && W.slots[i].time === time) return i;
+    return -1;
+  }
+  function daySlots(W, day){ var a = []; W.slots.forEach(function(s, i){ if (s.day === day) a.push(i); }); return a; }
+  function selected(W){
+    if (!state.rooms.length) return W.rooms;
+    return W.rooms.filter(function(r){ return state.rooms.indexOf(r.name) >= 0; });
+  }
+  function hit(room, text){
+    if (!state.q) return true;
+    return (text && text.toLowerCase().indexOf(state.q) >= 0) || room.name.toLowerCase().indexOf(state.q) >= 0;
+  }
+  function todayIdx(){
+    var diff = Math.round((new Date(new Date().toDateString()) - state.monday) / 86400000);
+    return diff >= 0 && diff < 7 ? diff : -1;
+  }
+  function nowSlot(W){
+    var d = todayIdx(); if (d < 0) return null;
+    var n = new Date(), m = n.getHours() * 60 + n.getMinutes();
+    var list = daySlots(W, d);
+    for (var k = 0; k < list.length; k++) { var st = mins(W.slots[list[k]].time); if (m >= st && m < st + SLOT_MIN) return {si: list[k], live: true}; }
+    for (var k2 = 0; k2 < list.length; k2++) { if (mins(W.slots[list[k2]].time) > m) return {si: list[k2], live: false}; }
+    return null;
+  }
+
+  /* ---------- bookings: data ---------- */
+  var CFG_DEF = {approval: false, open: '08:00', close: '21:00', maxMin: 240, maxDays: 60};
+  var ST_LABEL = {ok: 'Հաստատված', wait: 'Սպասում է', cancel: 'Չեղարկված', reject: 'Մերժված'};
+  function bookingOn(){ return !!(state.data && state.data.bookCfg); }
+  function cfg(){ var c = (state.data && state.data.bookCfg) || {}, o = {}; for (var k in CFG_DEF) o[k] = c[k] != null ? c[k] : CFG_DEF[k]; return o; }
+  function me(){ return (state.data && state.data.me) || {email: '', name: '', isAdmin: false}; }
+  function isoOf(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function fromIso(s){ var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function dayOfIso(s){ return (fromIso(s).getDay() + 6) % 7; }
+  function rkey(s){ return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+  function activeB(b){ return b.status === 'ok' || b.status === 'wait'; }
+  function allBookings(){ return (state.data && state.data.bookings) || []; }
+  function findB(id){ var a = allBookings(); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+  function bookingsOn(iso, room){
+    return allBookings().filter(function(b){ return activeB(b) && b.date === iso && (!room || rkey(b.room) === rkey(room)); })
+      .sort(function(a, b){ return mins(a.start) - mins(b.start); });
+  }
+  function nowMin(){ var n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
+  function isPast(iso, m){ var t = isoOf(new Date()); return iso < t || (iso === t && m <= nowMin()); }
+  function upcoming(b){ return !isPast(b.date, mins(b.end)); }
+  function bLabel(b){ return [b.group, b.purpose].filter(Boolean).join(' · '); }
+  function bMatch(b){ return !state.q || (b.room + ' ' + bLabel(b) + ' ' + (b.name || '')).toLowerCase().indexOf(state.q) >= 0; }
+  function roomColor(name){
+    var W = week(); if (!W) return 'var(--accent)';
+    for (var i = 0; i < W.rooms.length; i++) if (rkey(W.rooms[i].name) === rkey(name)) return W.rooms[i].color;
+    return 'var(--accent)';
+  }
+  /* A slot lasts until the next slot of the day, at most two hours (same rule as Booking.gs). */
+  function slotBlock(W, si){
+    var s = W.slots[si], list = daySlots(W, s.day), k = list.indexOf(si);
+    var s0 = mins(s.time), hasNext = k + 1 < list.length, next = hasNext ? mins(W.slots[list[k + 1]].time) : s0 + SLOT_MIN;
+    var e0 = Math.min(next, s0 + SLOT_MIN); if (e0 <= s0) e0 = s0 + 60;
+    return {s: s0, e: e0, next: hasNext ? next : 24 * 60, first: k === 0};
+  }
+  var RANGE_RE = /(\d{1,2})[:։.∶](\d{2})\s*[-\u2013\u2014]\s*(\d{1,2})[:։.∶](\d{2})/;
+  var LEAD_RE = /^(\d{1,2})[:։.∶](\d{2})(?!\d)/;
+  /* Busy intervals of a room on a day of the grid; a cell with its own hours is busy only then. */
+  function gridBusy(W, r, day){
+    var out = [];
+    daySlots(W, day).forEach(function(si){
+      var text = String(r.cells[si] || '').trim(); if (!text) return;
+      var blk = slotBlock(W, si), timed = [];
+      text.split(/\n+/).forEach(function(ln){
+        ln = ln.trim();
+        var m = ln.match(RANGE_RE);
+        if (m && +m[1] < 24 && +m[3] < 24) { var a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4]; if (b > a) { timed.push({s: a, e: b, text: ln}); return; } }
+        m = ln.match(LEAD_RE);
+        if (m && +m[1] < 24) { var c = +m[1] * 60 + +m[2]; timed.push({s: c, e: c + 60, text: ln}); }
+      });
+      if (timed.length) out = out.concat(timed); else out.push({s: blk.s, e: blk.e, text: text.replace(/\s+/g, ' ')});
+    });
+    return out;
+  }
+  function roomIn(W, name){ if (!W) return null; for (var i = 0; i < W.rooms.length; i++) if (rkey(W.rooms[i].name) === rkey(name)) return W.rooms[i]; return null; }
+  /* Everything that occupies a room on a date: [{s, e, text, kind: 'grid'|'book', b}] */
+  function busyOn(roomName, iso, ignoreId){
+    var W = weekOf(mondayOf(fromIso(iso))), r = roomIn(W, roomName), out = [];
+    if (r) gridBusy(W, r, dayOfIso(iso)).forEach(function(x){ out.push({s: x.s, e: x.e, text: x.text, kind: 'grid'}); });
+    bookingsOn(iso, roomName).forEach(function(b){
+      if (b.id === ignoreId) return;
+      out.push({s: mins(b.start), e: mins(b.end), text: (bLabel(b) || 'Ամրագրում') + (b.name ? ' · ' + b.name : ''), kind: 'book', b: b});
+    });
+    return out.sort(function(a, b){ return a.s - b.s; });
+  }
+  function clashes(roomName, iso, s, e, ignoreId){
+    return busyOn(roomName, iso, ignoreId).filter(function(x){ return x.s < e && s < x.e; });
+  }
+
+  /* ---------- bookings: how they look in the views ---------- */
+  function tagFor(b){ return '<em class="bktag' + (b.status === 'wait' ? ' wait' : '') + '">' + (b.status === 'wait' ? 'Սպասում է' : 'Ամրագրում') + '</em>'; }
+  function bookLi(b){
+    return '<li class="booked' + (b.status === 'wait' ? ' wait' : '') + '" data-bid="' + esc(b.id) + '" tabindex="0" role="button" title="Մանրամասներ">' +
+      '<i class="dot" style="--c:' + roomColor(b.room) + '"></i><b>' + hl(b.room) + '</b><span><span class="lines"><span class="ln"><time>' + b.start + '-' + b.end + '</time><span>' +
+      hl(bLabel(b)) + (b.name ? ' · ' + esc(b.name) : '') + '</span></span></span> ' + tagFor(b) + '</span></li>';
+  }
+  function bookPill(b){
+    return '<button type="button" class="pill booked' + (b.status === 'wait' ? ' wait' : '') + (state.q && !bMatch(b) ? ' dim' : '') + '" data-bid="' + esc(b.id) + '">' +
+      '<span><span class="lines"><span class="ln"><time>' + b.start + '-' + b.end + '</time><span>' + esc(bLabel(b)) + '</span></span></span> ' + tagFor(b) + '</span></button>';
+  }
+  function bookAttrs(room, day, time){
+    return ' data-bk-room="' + esc(room || '') + '" data-bk-day="' + day + '" data-bk-time="' + time + '"';
+  }
+
+  /* ---------- header, stats, chips ---------- */
+  function renderHeader(W){
+    var m = state.monday, s = addDays(m, 6);
+    $('weekRange').textContent = dm(m) + ' - ' + dm(s) + '.' + s.getFullYear();
+    var src = $('weekSource');
+    if (!W) { src.textContent = ''; return; }
+    src.textContent = W.isBase ? 'Այս շաբաթվա թերթիկ չկա - ցուցադրվում է Total-ը' : W.source;
+    src.className = 'source' + (W.isBase ? ' base' : '');
+  }
+
+  function renderStats(W){
+    var rooms = selected(W), h = '';
+    var total = rooms.length * W.slots.length, busy = 0;
+    rooms.forEach(function(r){ busy += r.busy; });
+    var pct = total ? Math.round(busy * 100 / total) : 0;
+
+    var ns = nowSlot(W);
+    if (ns) {
+      var s = W.slots[ns.si], b = rooms.filter(function(r){ return r.cells[ns.si]; }).length;
+      h += '<div class="stat live"><span class="k">' + (ns.live ? 'Հիմա · ' : 'Հաջորդը · ') + SHORT[s.day] + ' ' + s.time + '-' + hm(mins(s.time) + SLOT_MIN) + '</span>' +
+           '<span class="v">' + (rooms.length - b) + ' ազատ</span><span class="s">' + b + ' տարածք զբաղված է</span></div>';
+    } else {
+      h += '<div class="stat"><span class="k">Ընտրված շաբաթ</span><span class="v mono">' + dm(state.monday) + ' - ' + dm(addDays(state.monday, 6)) + '</span><span class="s">' + esc(W.isBase ? 'Հիմնական ժամանակացույց (Total)' : W.source) + '</span></div>';
+    }
+
+    h += '<div class="stat"><span class="k">Շաբաթվա զբաղվածություն</span><span class="v">' + pct + '%</span>' +
+         '<span class="s">' + busy + ' / ' + total + ' ժամային հատված</span><span class="meter"><i style="width:' + pct + '%"></i></span></div>';
+
+    var best = -1, bestN = -1;
+    W.slots.forEach(function(s, i){ var c = rooms.filter(function(r){ return r.cells[i]; }).length; if (c > bestN) { bestN = c; best = i; } });
+    if (best >= 0) {
+      var bs = W.slots[best];
+      h += '<div class="stat"><span class="k">Ամենածանրաբեռնված ժամը</span><span class="v">' + DAYS[bs.day] + ', <span class="mono">' + bs.time + '</span></span><span class="s">' + bestN + ' / ' + rooms.length + ' տարածք զբաղված</span></div>';
+    }
+    if (rooms.length) {
+      var fr = rooms.slice().sort(function(a, b){ return a.busy - b.busy; })[0];
+      h += '<div class="stat"><span class="k">Ամենաազատ տարածքը</span><span class="v"><i class="dot" style="--c:' + fr.color + '"></i> ' + esc(fr.name) + '</span><span class="s">' + (W.slots.length - fr.busy) + ' ազատ հատված ' + W.slots.length + '-ից</span></div>';
+    }
+    $('stats').innerHTML = h;
+  }
+
+  /* Rooms: one dropdown with check boxes; the rooms picked so far sit next to it and can be removed. */
+  function renderChips(W){
+    var n = state.rooms.length;
+    $('roomBtn').innerHTML = 'Տարածքներ՝ ' + (n ? '<span class="n">' + n + '</span>' : 'Բոլորը') + '<span class="cv" aria-hidden="true">&#9662;</span>';
+    $('roomChips').innerHTML = W.rooms.filter(function(r){ return state.rooms.indexOf(r.name) >= 0; }).map(function(r){
+      return '<button type="button" class="chip" data-room="' + esc(r.name) + '" title="Հանել ֆիլտրից" aria-label="Հանել՝ ' + esc(r.name) + '"><i class="dot" style="--c:' + r.color + '"></i>' + esc(r.name) + '<span class="x" aria-hidden="true">&times;</span></button>';
+    }).join('');
+    $('roomPop').innerHTML = '<div class="pophd"><span>' + (n ? 'Ընտրված է ' + n + '-ը ' + W.rooms.length + '-ից' : 'Ցույց են տրված բոլոր ' + W.rooms.length + ' տարածքները') + '</span>' +
+      (n ? '<button type="button" class="linkbtn" data-all>Ցույց տալ բոլորը</button>' : '') + '</div><div class="rgrid">' +
+      W.rooms.map(function(r){
+        var on = state.rooms.indexOf(r.name) >= 0;
+        return '<label class="ropt"><input type="checkbox" data-room="' + esc(r.name) + '"' + (on ? ' checked' : '') + '><i class="dot" style="--c:' + r.color + '"></i>' + esc(r.name) + '</label>';
+      }).join('') + '</div>';
+  }
+
+  /* Colours: a small button with the swatches; the labels open from it. */
+  function renderLegend(){
+    var L = (state.data && state.data.legend) || [];
+    $('legendBtn').hidden = !L.length;
+    if (!L.length) { $('legend').hidden = true; $('legend').innerHTML = ''; return; }
+    $('legendBtn').innerHTML = '<span class="sws" aria-hidden="true">' + L.slice(0, 6).map(function(l){ return '<i style="--tint:' + l.color + '"></i>'; }).join('') + '</span>Գույներ<span class="cv" aria-hidden="true">&#9662;</span>';
+    $('legend').innerHTML = L.map(function(l){
+      return '<span class="lg"><i class="sw" style="--tint:' + l.color + '"></i>' + esc(l.label || l.color) + '</span>';
+    }).join('');
+  }
+  function popOpen(id){ return !$(id).hidden; }
+  function setPop(id, open){
+    var btn = id === 'roomPop' ? 'roomBtn' : 'legendBtn';
+    $(id).hidden = !open; $(btn).setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function closePops(){ setPop('roomPop', false); setPop('legend', false); }
+
+  /* Coloured cells in the grid are events; they join the events from the Events tab. */
+  function gridEvents(W){
+    if (!W) return [];
+    var by = {}, out = [];
+    W.rooms.forEach(function(r){
+      W.slots.forEach(function(s, i){
+        var c = r.colors[i];
+        if (!r.cells[i] || !isEvent(c)) return;
+        var k = s.day + '|' + r.name + '|' + r.cells[i];
+        if (!by[k]) { by[k] = {day: s.day, room: r.name, text: r.cells[i], color: c, times: []}; out.push(by[k]); }
+        by[k].times.push(s.time);
+      });
+    });
+    out.forEach(function(e){ e.times.sort(function(a, b){ return mins(a) - mins(b); }); });
+    return out;
+  }
+
+  function renderEvents(W){
+    var box = $('events'), d = state.data, h = '';
+    gridEvents(W).forEach(function(e){
+      var day = addDays(state.monday, e.day);
+      var endM = mins(e.times[e.times.length - 1]) + SLOT_MIN, span = e.times[0] + '-' + hm(endM);
+      h += '<div class="event mark' + (isPast(isoOf(day), endM) ? ' past' : '') + '" style="--tint:' + e.color + '"><span class="when">' + SHORT[e.day] + ' ' + dm(day) + ' · ' + span + '</span><b>' + esc(e.text) + '</b><span class="room">' + esc(e.room) + '</span></div>';
+    });
+    if (d && d.events) {
+      for (var i = 0; i < 7; i++) {
+        var day2 = addDays(state.monday, i);
+        d.events.forEach(function(e){
+          if (e.day === day2.getDate() && e.month === day2.getMonth() + 1 && (!e.year || e.year === day2.getFullYear())) {
+            var endE = /^\d{2}:\d{2}$/.test(e.end || '') ? mins(e.end) : 24 * 60;
+            h += '<div class="event' + (isPast(isoOf(day2), endE) ? ' past' : '') + '"><span class="when">' + SHORT[i] + ' ' + dm(day2) + (e.start ? ' · ' + esc(e.start) + (e.end ? '-' + esc(e.end) : '') : '') + '</span><b>' + esc(e.subject) + '</b>' + (e.location ? '<span class="room">' + esc(e.location) + '</span>' : '') + '</div>';
+          }
+        });
+      }
+    }
+    box.innerHTML = h;
+  }
+
+  /* ---------- programs («Իմ ծրագիրը») ----------
+     «Ծրագրավորում 74 🔼» is program «Ծրագրավորում», group 74; arrows and hours are ignored.
+     «Բ1 Մանկան Զարգացման անկյուն» has its group in front. Spellings such as
+     «Երաժշտ․ գործ 74» and «Երաժշտ․ գործիք․75» count as one program. */
+  var NL = String.fromCharCode(10);
+  var PIC_RE = /[\p{Extended_Pictographic}\p{Mn}\p{Cf}]/gu;
+  /* lines of a cell; a line with two time ranges («Բ1 ... 13:30-14:55 Ա3 ... 15։30-16։40») is two sessions */
+  function cellLines(c){
+    var out = [];
+    String(c == null ? '' : c).split(NL).forEach(function(ln){
+      ln = ln.trim(); if (!ln) return;
+      var re = new RegExp(RANGE_RE.source, 'g'), parts = [], last = 0, m;
+      while ((m = re.exec(ln))) { parts.push(ln.slice(last, m.index + m[0].length).trim()); last = m.index + m[0].length; }
+      if (parts.length < 2) { out.push(ln); return; }
+      var rest = ln.slice(last).trim();
+      if (rest) parts[parts.length - 1] += ' ' + rest;
+      parts.forEach(function(p){ if (p) out.push(p); });
+    });
+    return out;
+  }
+  /* joint sessions: «EQ Lab 7 🔽, Յոգա 74 🔽» is EQ Lab 7 in this room, together with Յոգա 74;
+     a comma (or «․») right after a group number starts the next group */
+  var TOG_RE = /(\d)\s*[,;․.]\s*(?=\p{L})/u;
+  function together(s){
+    s = String(s || '').trim();
+    var parts = [], rest = s, m;
+    while ((m = rest.match(TOG_RE))) { parts.push(rest.slice(0, m.index + 1).trim()); rest = rest.slice(m.index + m[0].length); }
+    parts.push(rest.trim());
+    parts = parts.filter(function(x){ return x; });
+    return parts.length > 1 && parts.every(function(x){ return /\p{L}/u.test(x); }) ? parts : [s];
+  }
+  function progOf(line){
+    var s = String(line || '').replace(PIC_RE, ' ').replace(new RegExp(RANGE_RE.source, 'g'), ' ')
+      .replace(/\d{1,2}[:։.∶]\d{2}/g, ' ').replace(/\s+/g, ' ').trim()
+      .replace(/^\d{1,2}\s*[.․)]\s+/, '');   /* «1. Առողջ ապրելակերպ ...» is a list number, not a group */
+    var parts = together(s), grp = '', m;
+    s = parts[0];
+    var withG = parts.slice(1).filter(function(x){ return /\p{L}\D*?\s*\d{1,3}$/u.test(x); });
+    if ((m = s.match(/^(\p{L}\d{1,2})\s+(\S.*)$/u))) { grp = m[1]; s = m[2]; }
+    else if ((m = s.match(/^(.*\p{L}\D*?)\s*(\d{1,3})$/u))) { grp = m[2]; s = m[1]; }
+    var name = s.replace(/[\s.,;:․·+-]+$/u, '').trim();
+    var key = name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+    return key.length >= 2 ? {key: key, name: name, group: grp, with: withG} : null;
+  }
+  /* one key is the start of the other and nearly as long: «երաժշտգործ» / «երաժշտգործիք» */
+  function sameProg(a, b){
+    var lo = Math.min(a.length, b.length), hi = Math.max(a.length, b.length);
+    return a === b || (lo >= 3 && lo / hi >= 0.75 && (a.indexOf(b) === 0 || b.indexOf(a) === 0));
+  }
+  var progMemo = {data: undefined};
+  function progIndex(){
+    var d = state.data;
+    if (progMemo.data === d) return progMemo;
+    var count = {}, names = {}, grouped = {};
+    var grids = d ? d.weeks.map(function(w){ return w.grid; }).concat(d.base ? [d.base] : []) : [];
+    grids.forEach(function(g){ g.rooms.forEach(function(r){ r.cells.forEach(function(c){
+      cellLines(c).forEach(function(ln){
+        var p = progOf(ln); if (!p) return;
+        count[p.key] = (count[p.key] || 0) + 1;
+        if (p.group) grouped[p.key] = 1;
+        var nm = names[p.key] || (names[p.key] = {});
+        nm[p.name] = (nm[p.name] || 0) + 1;
+      });
+    }); }); });
+    var keys = Object.keys(count).sort(function(a, b){ return count[b] - count[a] || a.length - b.length; });
+    var canon = {}, list = [];
+    keys.forEach(function(k){
+      for (var i = 0; i < list.length; i++) {
+        if (sameProg(list[i].key, k)) {
+          canon[k] = list[i].key; list[i].n += count[k]; if (grouped[k]) list[i].grouped = true;
+          for (var nm in names[k]) list[i].names[nm] = (list[i].names[nm] || 0) + names[k][nm];
+          return;
+        }
+      }
+      var own = {}; for (var nm2 in names[k]) own[nm2] = names[k][nm2];
+      canon[k] = k; list.push({key: k, n: count[k], names: own, grouped: !!grouped[k]});
+    });
+    list.forEach(function(p){ p.name = Object.keys(p.names).sort(function(a, b){ return p.names[b] - p.names[a] || a.length - b.length; })[0]; });
+    list.sort(function(a, b){ return a.name.localeCompare(b.name, 'hy'); });
+    progMemo = {data: d, canon: canon, list: list};
+    return progMemo;
+  }
+  function canonOf(key){
+    if (!key) return '';
+    var idx = progIndex();
+    if (idx.canon[key]) return idx.canon[key];
+    for (var i = 0; i < idx.list.length; i++) if (sameProg(idx.list[i].key, key)) return idx.list[i].key;
+    return '';
+  }
+  function progInfo(k){ var L = progIndex().list; for (var i = 0; i < L.length; i++) if (L[i].key === k) return L[i]; return null; }
+  /* programs of the groups next to my e-mail in the Staff tab */
+  function myProgs(){
+    var out = [];
+    (me().groups || []).forEach(function(g){ var p = progOf(g), c = p ? canonOf(p.key) : ''; if (c && out.indexOf(c) < 0) out.push(c); });
+    return out;
+  }
+  function curProg(){ return canonOf(state.prog) || myProgs()[0] || ''; }
+  /* an instructor: not an administrator, and his e-mail is next to a group in Staff whose program is on the schedule */
+  function isInstructor(){ var m = me(); return !m.isAdmin && (m.groups || []).length > 0 && myProgs().length > 0; }
+  /* On opening the page instructors always land on «Իմ ծրագիրը» with one of their own programs;
+     everyone else gets the view they used last. */
+  function startView(){
+    var inst = isInstructor();
+    if (inst) {
+      state.view = 'prog';
+      if (myProgs().indexOf(canonOf(state.prog)) < 0) state.prog = '';
+    } else if (state.instr) state.view = state.savedView && state.savedView !== 'prog' ? state.savedView : 'time';
+    if (inst !== !!state.instr) { state.instr = inst; persist(); }
+  }
+  function lineSpan(ln, blk){
+    var m = ln.match(RANGE_RE);
+    if (m && +m[1] < 24 && +m[3] < 24) { var a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4]; if (b > a) return {s: a, e: b}; }
+    m = ln.match(LEAD_RE);
+    if (m && +m[1] < 24) { var c = +m[1] * 60 + +m[2]; return {s: c, e: c + 60}; }
+    return {s: blk.s, e: blk.e};
+  }
+  /* The program's sessions this week, plus bookings made for one of its groups. */
+  function progSessions(W, pk){
+    var out = [];
+    W.rooms.forEach(function(r){
+      W.slots.forEach(function(sl, si){
+        var c = r.cells[si]; if (!c) return;
+        var blk = slotBlock(W, si);
+        String(c).split(NL).forEach(function(raw){
+          raw = raw.trim(); if (!raw) return;
+          var subs = cellLines(raw);
+          subs.forEach(function(ln){
+            var p = progOf(ln); if (!p || canonOf(p.key) !== pk) return;
+            var t = lineSpan(ln, blk), clean = ln.replace(PIC_RE, ' ').replace(/\s+/g, ' ').trim().replace(/\s+([,;․])/g, '$1');
+            /* parts: the cell lines behind this session (moving it moves them all); a line that
+               holds two sessions cannot be moved from the page */
+            var part = {time: sl.time, line: raw, si: si, whole: subs.length === 1};
+            /* the same group in the same room in back-to-back slots is one session */
+            for (var i = 0; i < out.length; i++) {
+              var o = out[i];
+              if (!o.b && o.day === sl.day && o.room === r.name && o.group === p.group && o.key === p.key && t.s <= o.e && o.s <= t.e) {
+                o.e = Math.max(o.e, t.e); o.s = Math.min(o.s, t.s); o.parts.push(part);
+                p.with.forEach(function(w){ if (o.with.indexOf(w) < 0) o.with.push(w); });
+                return;
+              }
+            }
+            out.push({day: sl.day, s: t.s, e: t.e, room: r.name, rc: r.color, group: p.group, key: p.key, name: p.name, with: p.with.slice(), text: clean, tint: r.colors[si], parts: [part]});
+          });
+        });
+      });
+    });
+    for (var d = 0; d < 7; d++) {
+      bookingsOn(isoOf(addDays(state.monday, d))).forEach(function(b){
+        var p = b.group ? progOf(b.group) : null;
+        if (!p || canonOf(p.key) !== pk) return;
+        out.push({day: d, s: mins(b.start), e: mins(b.end), room: b.room, rc: roomColor(b.room), group: p.group, key: p.key, name: p.name, with: p.with, text: bLabel(b), b: b});
+      });
+    }
+    return out.sort(function(a, b){ return a.day - b.day || a.s - b.s || a.room.localeCompare(b.room, 'hy'); });
+  }
+  function groupSort(a, b){
+    var x = parseInt(a, 10), y = parseInt(b, 10);
+    if (!isNaN(x) && !isNaN(y) && x !== y) return x - y;
+    return String(a).localeCompare(String(b), 'hy');
+  }
+  /* «Փոխել տարածքը»: an instructor may move a session of his own group (Staff tab) to a room
+     that is free then; only weeks with their own tab, never the past. The server checks it all again. */
+  function ownsLine(line){
+    var p = progOf(line); if (!p) return false;
+    return (me().groups || []).some(function(g){ var q = progOf(g); return q && q.group === p.group && sameProg(q.key, p.key); });
+  }
+  function owned(x){ return !x.b && x.parts && x.parts.every(function(pt){ return ownsLine(pt.line); }); }
+  function canMove(W, x){
+    if (x.b || !x.parts || !W || W.isBase || !bookingOn()) return false;
+    if (isPast(isoOf(addDays(state.monday, x.day)), x.e)) return false;
+    if (!x.parts.every(function(pt){ return pt.whole; })) return false;
+    return me().isAdmin || owned(x);
+  }
+  function freeRoomsFor(W, x){
+    var iso = isoOf(addDays(state.monday, x.day));
+    return W.rooms.filter(function(r){
+      if (rkey(r.name) === rkey(x.room)) return false;
+      if (x.parts.some(function(pt){ return String(r.cells[pt.si] || '').trim(); })) return false;
+      return !clashes(r.name, iso, x.s, x.e).length;
+    });
+  }
+
+  /* ---------- views ---------- */
+  function dayHead(d, tag){
+    var t = todayIdx() === d ? ' today' : '';
+    return '<' + tag + ' class="th' + t + '"><span class="dn">' + DAYS[d] + '</span><span class="dd">' + dm(addDays(state.monday, d)) + '</span></' + tag + '>';
+  }
+
+  function cellHtml(W, si, rooms, ns, extraCls){
+    var slot = W.slots[si], blk = slotBlock(W, si), iso = isoOf(addDays(state.monday, slot.day));
+    var inSel = {}; rooms.forEach(function(r){ inSel[rkey(r.name)] = 1; });
+    var dayB = bookingsOn(iso).filter(function(b){ return inSel[rkey(b.room)]; });
+    /* a booking is listed in the slot it starts in (earlier ones in the first slot) */
+    var mine = dayB.filter(function(b){ var st = mins(b.start); return (blk.first || st >= blk.s) && st < blk.next; });
+    var over = {}; dayB.forEach(function(b){ if (mins(b.start) < blk.e && blk.s < mins(b.end)) over[rkey(b.room)] = 1; });
+    var list = rooms.filter(function(r){ return r.cells[si]; });
+    var busyN = rooms.filter(function(r){ return r.cells[si] || over[rkey(r.name)]; }).length;
+    var shown = list.filter(function(r){ return hit(r, r.cells[si]); });
+    var shownB = mine.filter(bMatch);
+    var pct = rooms.length ? Math.round(busyN * 100 / rooms.length) : 0;
+    var isNow = ns && ns.si === si && ns.live;
+    var add = bookingOn() && !isPast(iso, blk.e)
+      ? '<button type="button" class="addbk"' + bookAttrs('', slot.day, slot.time) + ' title="Ամրագրել այս ժամին" aria-label="Ամրագրել՝ ' + DAYS[slot.day] + ' ' + slot.time + '">+</button>' : '';
+    var h = '<div class="cell' + (extraCls || '') + (isNow ? ' now' : '') + '">';
+    h += '<div class="chead"><span class="ctime">' + slot.time + '</span><span class="count"><b>' + busyN + '</b>/' + rooms.length + '</span><span class="meter"><i style="width:' + pct + '%"></i></span>' + (isNow ? '<span class="livetag">Հիմա</span>' : '') + add + '</div>';
+    if (shown.length || shownB.length) {
+      h += '<ul class="blist">' + shown.map(function(r){
+        var t = tintAttrs(r.colors[si]);
+        return '<li class="' + t.cls.trim() + '"' + t.style + '><i class="dot" style="--c:' + r.color + '"></i><b>' + hl(r.name) + '</b><span>' + cellText(r.cells[si]) + t.tag + '</span></li>';
+      }).join('') + shownB.map(bookLi).join('') + '</ul>';
+    } else {
+      h += '<p class="empty">' + (list.length || mine.length ? 'Որոնմանը համապատասխան չկա' : 'Ազատ է') + '</p>';
+    }
+    return h + '</div>';
+  }
+  /* A day with no slots in the grid can still have bookings. */
+  function bookingsOnlyCell(d, rooms, extraCls){
+    var inSel = {}; rooms.forEach(function(r){ inSel[rkey(r.name)] = 1; });
+    var list = bookingsOn(isoOf(addDays(state.monday, d))).filter(function(b){ return inSel[rkey(b.room)] && bMatch(b); });
+    if (!list.length) return '<div class="cell none">Ժամային հատվածներ չկան</div>';
+    return '<div class="cell' + (extraCls || '') + '"><div class="chead"><span class="ctime">Ամրագրումներ</span></div><ul class="blist">' + list.map(bookLi).join('') + '</ul></div>';
+  }
+
+  function viewTime(W){
+    var rooms = selected(W), ns = nowSlot(W), td = todayIdx(), h = '';
+    if (mq.matches) {
+      if (state.mDay === null) state.mDay = td >= 0 ? td : 0;
+      h += '<div class="daytabs">';
+      for (var d = 0; d < 7; d++) h += '<button class="pick' + (d === state.mDay ? ' on' : '') + '" data-mday="' + d + '">' + SHORT[d] + '<small>' + dm(addDays(state.monday, d)) + '</small></button>';
+      h += '</div><div class="stack">';
+      var ms = daySlots(W, state.mDay);
+      ms.forEach(function(si){ h += cellHtml(W, si, rooms, ns, state.mDay === td ? ' today' : ''); });
+      if (!ms.length) h += bookingsOnlyCell(state.mDay, rooms, state.mDay === td ? ' today' : '');
+      return h + '</div>';
+    }
+    h += '<div class="scroll"><div class="dgrid">';
+    for (var d2 = 0; d2 < 7; d2++) {
+      var list = daySlots(W, d2);
+      h += '<section class="dcol">' + dayHead(d2, 'div');
+      list.forEach(function(si){ h += cellHtml(W, si, rooms, ns, d2 === td ? ' today' : ''); });
+      if (!list.length) h += bookingsOnlyCell(d2, rooms, d2 === td ? ' today' : '');
+      h += '</section>';
+    }
+    return h + '</div></div>';
+  }
+
+  function sortedRooms(W){
+    var rooms = selected(W).slice();
+    if (state.sort === 'az') rooms.sort(function(a, b){ return a.name.localeCompare(b.name, 'hy'); });
+    else if (state.sort === 'busy') rooms.sort(function(a, b){ return b.busy - a.busy || a.i - b.i; });
+    else if (state.sort === 'free') rooms.sort(function(a, b){ return a.busy - b.busy || a.i - b.i; });
+    if (state.q) rooms = rooms.filter(function(r){ return r.name.toLowerCase().indexOf(state.q) >= 0 || r.cells.some(function(c){ return c && c.toLowerCase().indexOf(state.q) >= 0; }); });
+    return rooms;
+  }
+  function pillsHtml(W, r, d, ns){
+    var iso = isoOf(addDays(state.monday, d)), bks = bookingsOn(iso, r.name), used = {}, items = [];
+    daySlots(W, d).forEach(function(si){
+      var c = r.cells[si], blk = slotBlock(W, si), dim = state.q && !hit(r, c) ? ' dim' : '', now = ns && ns.live && ns.si === si ? ' now' : '';
+      if (c) {
+        var t = tintAttrs(r.colors[si]), timed = cellHasTimes(c);
+        items.push({m: blk.s, h: '<div class="pill busy' + (timed ? ' notime' : '') + t.cls + dim + now + '"' + t.style + '>' + (timed ? '' : '<time>' + W.slots[si].time + '</time>') + '<span>' + cellText(c) + t.tag + '</span></div>'});
+        return;
+      }
+      var ov = bks.filter(function(b){ return mins(b.start) < blk.e && blk.s < mins(b.end); });
+      if (ov.length) { ov.forEach(function(b){ if (!used[b.id]) { used[b.id] = 1; items.push({m: mins(b.start), h: bookPill(b)}); } }); return; }
+      var fdim = (state.q ? ' dim' : '') + now;
+      items.push({m: blk.s, h: bookingOn() && !isPast(iso, blk.e)
+        ? '<button type="button" class="pill free' + fdim + '"' + bookAttrs(r.name, d, W.slots[si].time) + ' title="Ամրագրել"><time>' + W.slots[si].time + '</time><span>ազատ</span></button>'
+        : '<div class="pill free' + fdim + '"><time>' + W.slots[si].time + '</time><span>ազատ</span></div>'});
+    });
+    bks.forEach(function(b){ if (!used[b.id]) items.push({m: mins(b.start), h: bookPill(b)}); });
+    items.sort(function(a, b){ return a.m - b.m; });
+    return '<div class="pills">' + items.map(function(x){ return x.h; }).join('') + '</div>';
+  }
+  function roomHead(W, r){
+    var pct = W.slots.length ? Math.round(r.busy * 100 / W.slots.length) : 0;
+    return '<button class="rbtn" data-only="' + esc(r.name) + '" title="Ցույց տալ միայն այս տարածքը"><i class="dot" style="--c:' + r.color + '"></i><span class="rname">' + hl(r.name) + '</span></button>' +
+      (r.desc ? '<span class="rdesc">' + esc(r.desc) + '</span>' : '<span class="rdesc"></span>') +
+      '<div class="util"><span class="meter"><i style="width:' + pct + '%"></i></span><span class="mono">' + r.busy + '/' + W.slots.length + '</span></div>';
+  }
+
+  function viewPlace(W){
+    var rooms = sortedRooms(W), ns = nowSlot(W), td = todayIdx();
+    if (!rooms.length) return '<div class="status">Համապատասխան տարածք չգտնվեց</div>';
+    if (mq.matches) {
+      return '<div class="stack">' + rooms.map(function(r){
+        var h = '<div class="rcard">' + roomHead(W, r) + '<div class="rdays">';
+        for (var d = 0; d < 7; d++) h += '<div class="dl' + (d === td ? ' today' : '') + '">' + SHORT[d] + '</div>' + pillsHtml(W, r, d, ns);
+        return h + '</div></div>';
+      }).join('') + '</div>';
+    }
+    var h = '<div class="scroll"><table class="ptable"><thead><tr><th class="room">Տարածք</th>';
+    for (var d = 0; d < 7; d++) h += '<th class="' + (d === td ? 'today' : '') + '">' + DAYS[d] + '<span class="dd">' + dm(addDays(state.monday, d)) + '</span></th>';
+    h += '</tr></thead><tbody>';
+    rooms.forEach(function(r){
+      h += '<tr><th class="room">' + roomHead(W, r) + '</th>';
+      for (var d = 0; d < 7; d++) h += '<td class="' + (d === td ? 'today' : '') + '">' + pillsHtml(W, r, d, ns) + '</td>';
+      h += '</tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
+
+  function viewFree(W){
+    var rooms = selected(W), ns = nowSlot(W), td = todayIdx();
+    if (state.freeDay === null || daySlots(W, state.freeDay).length === 0) {
+      if (ns) { state.freeDay = W.slots[ns.si].day; state.freeTime = W.slots[ns.si].time; }
+      else { state.freeDay = td >= 0 && daySlots(W, td).length ? td : (W.slots[0] ? W.slots[0].day : 0); state.freeTime = null; }
+    }
+    var ds = daySlots(W, state.freeDay);
+    var times = ds.map(function(si){ return W.slots[si].time; });
+    if (times.indexOf(state.freeTime) < 0) state.freeTime = times[0] || null;
+    var h = '<div class="picker"><div class="pickrow"><span class="lbl">Օր</span>';
+    for (var d = 0; d < 7; d++) {
+      var has = daySlots(W, d).length > 0;
+      h += '<button class="pick' + (d === state.freeDay ? ' on' : '') + '" data-fday="' + d + '"' + (has ? '' : ' disabled') + '>' + SHORT[d] + '<small>' + dm(addDays(state.monday, d)) + '</small></button>';
+    }
+    h += '</div><div class="pickrow"><span class="lbl">Ժամ</span>';
+    times.forEach(function(t){ h += '<button class="pick' + (t === state.freeTime ? ' on' : '') + '" data-ftime="' + t + '">' + t + '</button>'; });
+    h += '</div></div>';
+    var si = slotIndex(W, state.freeDay, state.freeTime);
+    if (si < 0) return h + '<div class="status">Այս օրը ժամային հատվածներ չկան</div>';
+    var blk = slotBlock(W, si), iso = isoOf(addDays(state.monday, state.freeDay));
+    function bookedNow(r){ return bookingsOn(iso, r.name).filter(function(b){ return mins(b.start) < blk.e && blk.s < mins(b.end); }); }
+    var free = rooms.filter(function(r){ return !r.cells[si] && !bookedNow(r).length; }).filter(function(r){ return !state.q || r.name.toLowerCase().indexOf(state.q) >= 0; });
+    var busy = rooms.filter(function(r){ return r.cells[si] || bookedNow(r).length; });
+    var canBook = bookingOn() && !isPast(iso, blk.e);
+    h += '<div class="freehead"><h2>' + free.length + ' ազատ տարածք</h2><span>' + DAYS[state.freeDay] + ', ' + dm(addDays(state.monday, state.freeDay)) + ' · <span class="mono">' + state.freeTime + '-' + hm(blk.e) + '</span></span></div>';
+    if (!free.length) h += '<div class="status">Այս ժամին ազատ տարածք չկա</div>';
+    h += '<div class="fgrid">' + free.map(function(r){
+      var later = ds.filter(function(x){ return mins(W.slots[x].time) > mins(state.freeTime); });
+      var next = null, nextB = null;
+      for (var k = 0; k < later.length; k++) if (r.cells[later[k]]) { next = later[k]; break; }
+      bookingsOn(iso, r.name).forEach(function(b){ if (!nextB && mins(b.start) >= blk.e) nextB = b; });
+      var note;
+      if (nextB && (next === null || mins(nextB.start) < mins(W.slots[next].time))) note = '<div class="n soon bk">Ամրագրված՝ ' + nextB.start + '-ից · ' + esc(bLabel(nextB)) + '</div>';
+      else if (next !== null) note = '<div class="n soon">Զբաղված՝ ' + W.slots[next].time + '-ից · ' + esc(r.cells[next]) + '</div>';
+      else note = '<div class="n">Ազատ է մինչև օրվա վերջ</div>';
+      return '<div class="fcard"><div class="t"><i class="dot" style="--c:' + r.color + '"></i>' + esc(r.name) + '</div>' + (r.desc ? '<div class="d">' + esc(r.desc) + '</div>' : '') + note +
+        (canBook ? '<button type="button" class="ghost sm act"' + bookAttrs(r.name, state.freeDay, state.freeTime) + '>Ամրագրել</button>' : '') + '</div>';
+    }).join('') + '</div>';
+    if (busy.length) {
+      h += '<details class="busyfold"><summary>Զբաղված այս ժամին (' + busy.length + ')</summary><ul class="blist">' +
+        busy.map(function(r){
+          if (r.cells[si]) return '<li><i class="dot" style="--c:' + r.color + '"></i><b>' + esc(r.name) + '</b><span>' + esc(r.cells[si]) + '</span></li>';
+          return bookedNow(r).map(bookLi).join('');
+        }).join('') + '</ul></details>';
+    }
+    return h;
+  }
+
+  function byWhen(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : mins(a.start) - mins(b.start); }
+  function bkRow(b){
+    var d = fromIso(b.date), di = dayOfIso(b.date), M = me(), up = upcoming(b);
+    var grid = activeB(b) ? clashes(b.room, b.date, mins(b.start), mins(b.end), b.id).filter(function(x){ return x.kind === 'grid'; }) : [];
+    var acts = '';
+    if (b.status === 'wait' && M.isAdmin && up) acts += '<button type="button" class="primary sm" data-act="approve" data-id="' + esc(b.id) + '">Հաստատել</button><button type="button" class="ghost sm" data-act="reject" data-id="' + esc(b.id) + '">Մերժել</button>';
+    if (activeB(b) && up && (b.mine || M.isAdmin) && !(b.status === 'wait' && M.isAdmin && !b.mine)) acts += '<button type="button" class="ghost sm bad" data-act="cancel" data-id="' + esc(b.id) + '">Չեղարկել</button>';
+    var who = esc(b.name || '') + (b.email ? ' · ' + esc(b.email) : '');
+    return '<div class="bkrow ' + b.status + (activeB(b) && up ? '' : ' off') + '">' +
+      '<div class="bd">' + SHORT[di] + ' ' + dm(d) + '<small>' + DAYS[di] + '</small></div>' +
+      '<div class="bt">' + b.start + '-' + b.end + '</div>' +
+      '<div class="bw"><b><i class="dot" style="--c:' + roomColor(b.room) + '"></i>' + esc(b.room) + '</b><em class="bktag ' + b.status + '">' + ST_LABEL[b.status] + '</em>' +
+        '<span class="p">' + esc(bLabel(b)) + (who ? ' · ' + who : '') + '</span>' +
+        (grid.length ? '<span class="warn">Համընկնում է ժամանակացույցի հետ՝ ' + hm(grid[0].s) + '-' + hm(grid[0].e) + ' · ' + esc(grid[0].text) + '</span>' : '') + '</div>' +
+      '<div class="ba">' + acts + '</div></div>';
+  }
+  function viewBook(){
+    var M = me(), c = cfg(), all = allBookings();
+    var h = '<div class="bkhead"><h2>' + (M.isAdmin ? 'Բոլոր ամրագրումները' : 'Իմ ամրագրումները') + '</h2><button type="button" class="primary" data-newbk>+ Նոր ամրագրում</button></div>';
+    if (!M.email) h += '<p class="avail bad">Չհաջողվեց պարզել ձեր հաշիվը։ Բացեք էջը ձեր coaf.org հաշվով՝ ամրագրելու համար։</p>';
+    var mineOr = function(b){ return M.isAdmin || b.mine; };
+    var pend = all.filter(function(b){ return b.status === 'wait' && upcoming(b) && mineOr(b); }).sort(byWhen);
+    var up = all.filter(function(b){ return b.status === 'ok' && upcoming(b) && mineOr(b); }).sort(byWhen);
+    var past = all.filter(function(b){ return b.mine && (!activeB(b) || !upcoming(b)); }).sort(byWhen).reverse();
+    if (pend.length) h += '<section class="bksec"><h3>Սպասում են հաստատման · ' + pend.length + '</h3>' + pend.map(bkRow).join('') + '</section>';
+    h += '<section class="bksec"><h3>Առաջիկա' + (up.length ? ' · ' + up.length : '') + '</h3>' +
+      (up.length ? up.map(bkRow).join('') : '<div class="bkempty">' + (M.isAdmin ? 'Առաջիկա ամրագրումներ չկան։' : 'Դուք դեռ ամրագրում չունեք։ Սեղմեք «+ Ամրագրել» կամ ընտրեք ազատ ժամ օրացույցում։') + '</div>') + '</section>';
+    if (past.length) h += '<details class="busyfold"><summary>Անցած և չեղարկված (' + past.length + ')</summary><div style="margin-top:10px">' + past.map(bkRow).join('') + '</div></details>';
+    h += '<p class="fine" style="margin-top:16px">' + (c.approval ? 'Ամրագրումները հաստատում է ադմինիստրատորը։ ' : 'Ամրագրումը հաստատվում է անմիջապես, եթե տարածքն ազատ է։ ') +
+      'Ամրագրման ժամեր՝ ' + c.open + '-' + c.close + ', մեկ ամրագրումը՝ մինչև ' + (c.maxMin / 60) + ' ժամ, մինչև ' + c.maxDays + ' օր առաջ։' +
+      (M.isAdmin ? ' Կարգավորումները՝ Staff թերթիկում («Ամրագրման հաստատում» ON/OFF)։' : '') + '</p>';
+    return h;
+  }
+
+  /* «Իմ ծրագիրը»: pick a program once, see where and when it runs this week. */
+  function progSummary(S){
+    var rooms = {}, groups = {}, minsT = 0, nb = 0;
+    S.forEach(function(x){
+      if (x.b) nb++;
+      minsT += x.e - x.s;
+      rooms[x.room] = (rooms[x.room] || 0) + 1;
+      if (x.group) groups[x.group] = 1;
+    });
+    var rl = Object.keys(rooms).sort(function(a, b){ return rooms[b] - rooms[a] || a.localeCompare(b, 'hy'); });
+    return {n: S.length - nb, nb: nb, mins: minsT, rooms: rl, roomN: rooms, groups: Object.keys(groups).sort(groupSort)};
+  }
+  function renderProgStats(W){
+    var pk = curProg(), info = pk ? progInfo(pk) : null;
+    if (!info) {
+      $('stats').innerHTML = '<div class="stat"><span class="k">Իմ ծրագիրը</span><span class="v">Ընտրեք ծրագիրը</span><span class="s">Ցուցակը ներքևում է</span></div>';
+      return;
+    }
+    var S = progSessions(W, pk), m = progSummary(S);
+    var h = '<div class="stat"><span class="k">Պարապմունքներ այս շաբաթ</span><span class="v">' + m.n + '</span><span class="s">' + esc(info.name) + (m.nb ? ' · ևս ' + m.nb + ' ամրագրում' : '') + '</span></div>';
+    h += '<div class="stat"><span class="k">Ընդհանուր ժամեր</span><span class="v">' + (m.mins ? dur(m.mins) : '0') + '</span><span class="s">' + dm(state.monday) + ' - ' + dm(addDays(state.monday, 6)) + '</span></div>';
+    h += '<div class="stat"><span class="k">Տարածքներ</span><span class="v">' + m.rooms.length + '</span><span class="s">' + esc(m.rooms.slice(0, 3).join(', ') + (m.rooms.length > 3 ? '…' : '')) + '</span></div>';
+    h += '<div class="stat"><span class="k">Խմբեր</span><span class="v">' + m.groups.length + '</span><span class="s">' + esc(m.groups.slice(0, 8).join(', ') + (m.groups.length > 8 ? '…' : '')) + '</span></div>';
+    $('stats').innerHTML = h;
+  }
+  function progRow(x, i, W){
+    var t = x.b ? {cls: '', style: '', tag: ''} : tintAttrs(x.tint);
+    var cls = 'prow' + (x.b ? ' booked' + (x.b.status === 'wait' ? ' wait' : '') : t.cls);
+    var attrs = x.b ? ' data-bid="' + esc(x.b.id) + '" tabindex="0" role="button" title="Մանրամասներ"' : ' title="' + esc(x.text) + '"';
+    var who = x.group ? 'Խումբ ' + esc(x.group) : esc(x.name);
+    var mv = canMove(W, x) ? '<button type="button" class="ghost sm" data-mv="' + i + '">Փոխել տարածքը</button>' : '';
+    return '<div class="' + cls + '"' + t.style + attrs + '><span class="pt">' + hm(x.s) + '-' + hm(x.e) + '</span>' +
+      '<span class="pg">' + who + '</span>' +
+      '<span class="pr"><i class="dot" style="--c:' + x.rc + '"></i><b>' + esc(x.room) + '</b>' +
+      (x.with && x.with.length ? '<small class="pw">' + esc(x.with.join(', ')) + '-ի հետ</small>' : '') +
+      (x.b ? tagFor(x.b) + (x.b.name ? '<small>' + esc(x.b.name) + '</small>' : '') : t.tag) +
+      '</span><span class="pa">' + mv + '</span></div>';
+  }
+  function viewProg(W){
+    var idx = progIndex(), pk = curProg(), info = pk ? progInfo(pk) : null, mine = myProgs();
+    function opt(p){ return '<option value="' + esc(p.key) + '"' + (p.key === pk ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }
+    /* one-off events (a meeting, a film) are left out: a program has group numbers or repeats */
+    var all = idx.list.filter(function(p){ return p.grouped || p.n >= 3 || p.key === pk; });
+    var sel = '<option value="">Ընտրեք ծրագիրը…</option>';
+    if (mine.length) {
+      sel += '<optgroup label="Իմ խմբերի ծրագրերը">' + mine.map(progInfo).filter(Boolean).map(opt).join('') + '</optgroup>' +
+        '<optgroup label="Բոլոր ծրագրերը">' + all.filter(function(p){ return mine.indexOf(p.key) < 0; }).map(opt).join('') + '</optgroup>';
+    } else sel += all.map(opt).join('');
+    var h = '<div class="proghead"><label class="fld"><span>Ծրագիր</span><select id="progSel">' + sel + '</select></label>' +
+      '<p class="fine">' + (isInstructor() ? 'Էջը միշտ բացվում է ձեր ծրագրով։' : 'Ընտրությունը հիշվում է այս բրաուզերում։') + '</p></div>';
+    if (!info) return h + '<div class="bkempty">Ընտրեք ձեր ծրագիրը՝ տեսնելու, թե շաբաթվա որ օրերին, որ ժամերին և որ տարածքներում են անցնում պարապմունքները։</div>';
+    var S = progSessions(W, pk);
+    state.progS = S;
+    if (!S.length) return h + '<div class="bkempty">Այս շաբաթ «' + esc(info.name) + '» ծրագրի պարապմունք չկա։ Ընտրեք մեկ այլ շաբաթ վերևում։</div>';
+    if (W.isBase && bookingOn() && S.some(owned)) h += '<p class="fine pfree">Այս շաբաթը դեռ չունի իր թերթիկը (ցուցադրվում է Total-ը), ուստի ձեր խմբի տարածքը փոխել հնարավոր չէ։</p>';
+    var td = todayIdx(), empty = [];
+    for (var d = 0; d < 7; d++) {
+      var rows = S.filter(function(x){ return x.day === d; });
+      if (!rows.length) { empty.push(SHORT[d]); continue; }
+      var n = rows.filter(function(x){ return !x.b; }).length, nb = rows.length - n;
+      h += '<section class="pday' + (d === td ? ' today' : '') + '"><div class="pdh"><b>' + DAYS[d] + '</b><span class="mono">' + dm(addDays(state.monday, d)) + '</span>' +
+        (d === td ? '<span class="livetag">Այսօր</span>' : '') +
+        '<span class="n">' + (n ? n + ' պարապմունք' : '') + (n && nb ? ' · ' : '') + (nb ? nb + ' ամրագրում' : '') + '</span></div>' +
+        rows.map(function(x){ return progRow(x, S.indexOf(x), W); }).join('') + '</section>';
+    }
+    if (empty.length) h += '<p class="fine pfree">Պարապմունք չկա՝ ' + empty.join(', ') + '</p>';
+    var m = progSummary(S);
+    if (m.groups.length) {
+      h += '<section class="bksec"><h3>Ըստ խմբերի</h3><div class="pgtab">' + m.groups.map(function(g){
+        return '<b>Խումբ ' + esc(g) + '</b><div class="when">' + S.filter(function(x){ return x.group === g; }).map(function(x){
+          return '<span>' + SHORT[x.day] + ' <span class="mono">' + hm(x.s) + '</span> · ' + esc(x.room) + (x.b ? ' · ամրագրում' : '') + '</span>';
+        }).join('') + '</div>';
+      }).join('') + '</div></section>';
+    }
+    h += '<section class="bksec"><h3>Ըստ տարածքների</h3><div class="pgtab">' + m.rooms.map(function(r){
+      var mm = 0; S.forEach(function(x){ if (x.room === r) mm += x.e - x.s; });
+      return '<b><i class="dot" style="--c:' + roomColor(r) + '"></i> ' + esc(r) + '</b><div class="when"><span>' + m.roomN[r] + ' անգամ · ' + dur(mm) + '</span></div>';
+    }).join('') + '</div></section>';
+    return h;
+  }
+
+  function render(){
+    var W = week();
+    renderHeader(W);
+    var bon = bookingOn();
+    if (state.view === 'book' && state.data && !bon) state.view = 'time';
+    ['time', 'place', 'free', 'prog', 'book'].forEach(function(v){
+      var b = $('tab-' + v); b.className = state.view === v ? 'on' : ''; b.setAttribute('aria-selected', state.view === v);
+    });
+    $('sort').hidden = state.view !== 'place';
+    $('q').hidden = state.view === 'prog';
+    $('bookBtn').hidden = !bon;
+    $('tab-book').hidden = !bon;
+    if (bon) {
+      var M = me(), n = allBookings().filter(function(b){ return upcoming(b) && (M.isAdmin ? b.status === 'wait' : b.mine && activeB(b)); }).length;
+      $('tab-book').innerHTML = 'Ամրագրումներ' + (n ? '<span class="badge" title="' + (M.isAdmin ? 'Սպասում են հաստատման' : 'Առաջիկա ամրագրումներ') + '">' + n + '</span>' : '');
+      $('who').textContent = M.email ? 'Մուտք՝ ' + M.email + (M.isAdmin ? ' · ադմինիստրատոր' : '') : '';
+    }
+    if (!state.data) return;
+    if (!W) { $('view').innerHTML = '<div class="status err">«Total» թերթիկը չի գտնվել։</div>'; return; }
+    state.rooms = state.rooms.filter(function(n){ return W.rooms.some(function(r){ return r.name === n; }); });
+    var bookView = state.view === 'book', progView = state.view === 'prog';
+    if (progView) renderProgStats(W); else renderStats(W);
+    $('frow').hidden = bookView || progView; $('events').hidden = bookView || progView;
+    if (bookView || progView) closePops();
+    renderChips(W);
+    renderLegend();
+    renderEvents(W);
+    $('view').innerHTML = bookView ? viewBook() : progView ? viewProg(W) : state.view === 'place' ? viewPlace(W) : state.view === 'free' ? viewFree(W) : viewTime(W);
+  }
+
+  /* ---------- data ---------- */
+  /* mode: none = page opening (saved copy first, then the sheet as it is now);
+     'full' = read the sheet now; 'quick' = after a booking action (the schedule did not change). */
+  var BUSY = ' · թարմացվում է…';
+  function stamp(){
+    var t = new Date(state.data.updated);
+    return 'Թարմացվել է ' + pad(t.getHours()) + ':' + pad(t.getMinutes()) + ' · ' + state.data.weeks.length + ' շաբաթվա թերթիկ';
+  }
+  function load(mode){
+    var u = $('updated');
+    u.textContent = state.data ? stamp() + BUSY : 'Թարմացվում է…';
+    if (!(window.google && google.script && google.script.run)) { $('view').innerHTML = '<div class="status err">Էջը պետք է բացել Apps Script-ի հղումով։</div>'; return; }
+    google.script.run
+      .withSuccessHandler(function(json){
+        var nd = JSON.parse(json), od = state.data;
+        /* never swap a newer schedule for an older saved copy */
+        if (od && nd.cached && nd.updated < od.updated) ['base', 'weeks', 'events', 'legend', 'updated'].forEach(function(k){ nd[k] = od[k]; });
+        state.data = nd;
+        if (!od) startView();
+        var again = !mode && nd.cached;
+        u.textContent = stamp() + (again ? BUSY : '');
+        render();
+        if ($('bkDlg').open && !bk.sending) updateBook();
+        if ($('bvDlg').open && bv && !bv.busy) { var nb = findB(bv.b.id); if (nb) { bv.b = nb; renderView(); } }
+        if (again) load('full');
+      })
+      .withFailureHandler(function(err){
+        if (state.data) { u.textContent = stamp() + ' · չհաջողվեց թարմացնել'; return; }
+        u.textContent = '';
+        $('view').innerHTML = '<div class="status err">Տվյալները չհաջողվեց բեռնել․ ' + esc(err && err.message ? err.message : err) + '</div>';
+      })
+      .getData(mode === 'full' ? 'full' : 'fast');
+  }
+
+  /* ---------- booking dialog ---------- */
+  var bk = {sending: false, err: '', dur: 60}, bv = null;
+  function errText(err){ return String(err && err.message ? err.message : err || 'Սխալ').replace(/^(Error|Exception|ScriptError):\s*/i, ''); }
+  function showDlg(d){ if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); }
+  function closeDlg(d){ if (typeof d.close === 'function') { if (d.open) d.close(); } else d.removeAttribute('open'); }
+  var toastT;
+  function toast(msg){ var t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 4500); }
+  function q15(m){ return Math.ceil(m / 15) * 15; }
+  function dur(m){ var h = Math.floor(m / 60), r = m % 60; return (h ? h + ' ժ' : '') + (h && r ? ' ' : '') + (r ? r + ' ր' : ''); }
+  function todayDate(){ var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function submitLabel(){ return cfg().approval && !me().isAdmin ? 'Ուղարկել հայտը' : 'Ամրագրել'; }
+  function readBook(){
+    return {room: $('bkRoom').value, date: $('bkDate').value, s: +$('bkStart').value, e: +$('bkEnd').value,
+            purpose: $('bkPurpose').value.trim(), name: $('bkName').value.trim(), group: $('bkGroup').value};
+  }
+  function fillTimes(s, e){
+    var c = cfg(), o = mins(c.open), z = mins(c.close), h = '', k;
+    s = Math.max(o, Math.min(q15(s), z - 15));
+    for (k = o; k <= z - 15; k += 15) h += '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + hm(k) + '</option>';
+    $('bkStart').innerHTML = h;
+    var maxE = Math.min(z, s + c.maxMin);
+    e = Math.max(s + 15, Math.min(q15(e), maxE));
+    h = '';
+    for (k = s + 15; k <= maxE; k += 15) h += '<option value="' + k + '"' + (k === e ? ' selected' : '') + '>' + hm(k) + ' (' + dur(k - s) + ')</option>';
+    $('bkEnd').innerHTML = h;
+  }
+  /* Groups: your own (your e-mail is next to them in the Staff tab); an administrator can pick any group. */
+  function fillGroups(sel){
+    var M = me(), own = M.groups || [], all = M.allGroups || [];
+    var others = all.filter(function(g){ return own.indexOf(g) < 0; });
+    $('bkGroupFld').hidden = !own.length && !others.length;
+    if (sel && own.indexOf(sel) < 0 && others.indexOf(sel) < 0) sel = '';
+    if (!sel && own.length === 1 && !others.length) sel = own[0];
+    function opts(list){ return list.map(function(g){ return '<option value="' + esc(g) + '"' + (g === sel ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join(''); }
+    var h = '<option value="">Առանց խմբի</option>';
+    if (others.length) h += (own.length ? '<optgroup label="Իմ խմբերը">' + opts(own) + '</optgroup>' : '') + '<optgroup label="Բոլոր խմբերը">' + opts(others) + '</optgroup>';
+    else h += opts(own);
+    $('bkGroup').innerHTML = h;
+    purposeHint();
+  }
+  function purposeHint(){
+    $('bkPurpose').placeholder = $('bkGroup').value ? 'Լրացուցիչ նշում (պարտադիր չէ)' : 'Օր.՝ Ծնողական ժողով, անհատական պարապմունք';
+  }
+  function fillRooms(sel){
+    var iso = $('bkDate').value, W = iso ? weekOf(mondayOf(fromIso(iso))) : week();
+    var s = +$('bkStart').value, e = +$('bkEnd').value, h = '<option value="">Ընտրեք տարածքը</option>';
+    (W ? W.rooms : []).forEach(function(r){
+      var busy = iso && e > s && clashes(r.name, iso, s, e).length;
+      var desc = r.desc ? ' - ' + (r.desc.length > 36 ? r.desc.slice(0, 35) + '…' : r.desc) : '';
+      h += '<option value="' + esc(r.name) + '"' + (rkey(r.name) === rkey(sel) ? ' selected' : '') + '>' + esc(r.name + desc) + (busy ? ' · զբաղված' : '') + '</option>';
+    });
+    $('bkRoom').innerHTML = h;
+  }
+  function dayHtml(v, bad){
+    var c = cfg(), o = mins(c.open), z = mins(c.close), span = Math.max(60, z - o);
+    function pct(m){ return Math.max(0, Math.min(100, (m - o) * 100 / span)); }
+    var busy = busyOn(v.room, v.date), d = fromIso(v.date), h = '', ticks = '';
+    h += '<div class="dt"><span>' + esc(v.room) + ' · ' + DAYS[dayOfIso(v.date)] + ' ' + dm(d) + '</span><span>' + (busy.length ? 'Զբաղված ժամեր՝ ' + busy.length : '') + '</span></div>';
+    for (var m = Math.ceil(o / 120) * 120; m <= z; m += 120) ticks += '<span style="left:' + pct(m).toFixed(2) + '%">' + hm(m).slice(0, 2) + '</span>';
+    h += '<div class="tl"><div class="ticks">' + ticks + '</div><div class="timeline">';
+    busy.forEach(function(b){
+      h += '<i class="b' + (b.kind === 'book' ? ' bk' : '') + '" style="left:' + pct(b.s).toFixed(2) + '%;width:' + (pct(b.e) - pct(b.s)).toFixed(2) + '%" title="' + esc(hm(b.s) + '-' + hm(b.e) + ' ' + b.text) + '"></i>';
+    });
+    h += '<i class="sel' + (bad ? ' bad' : '') + '" style="left:' + pct(v.s).toFixed(2) + '%;width:' + (pct(v.e) - pct(v.s)).toFixed(2) + '%"></i></div></div>';
+    h += '<ul class="busylist">' + (busy.length ? busy.map(function(b){
+      return '<li class="' + (b.kind === 'book' ? 'bk' : '') + '"><time>' + hm(b.s) + '-' + hm(b.e) + '</time><span>' + esc(b.text) + (b.kind === 'book' ? (b.b.status === 'wait' ? ' · սպասում է հաստատման' : ' · ամրագրում') : '') + '</span></li>';
+    }).join('') : '<li class="none">Ամբողջ օրն ազատ է</li>') + '</ul>';
+    return h;
+  }
+  function updateBook(){
+    var M = me(), v = readBook(), box = $('bkAvail'), cls = 'info', msg, ready = false;
+    var clash = v.room && v.date && v.e > v.s ? clashes(v.room, v.date, v.s, v.e) : [];
+    $('bkDay').hidden = !(v.room && v.date);
+    $('bkDay').innerHTML = v.room && v.date ? dayHtml(v, clash.length > 0) : '';
+    if (bk.err) { cls = 'bad'; msg = bk.err; }
+    else if (!M.email) { cls = 'bad'; msg = 'Չհաջողվեց պարզել ձեր հաշիվը։ Բացեք էջը ձեր coaf.org հաշվով։'; }
+    else if (!v.date) msg = 'Ընտրեք օրը։';
+    else if (v.date < $('bkDate').min || isPast(v.date, v.s)) { cls = 'bad'; msg = 'Այս ժամն արդեն անցել է։'; }
+    else if (v.date > $('bkDate').max) { cls = 'bad'; msg = 'Ամրագրել կարելի է մինչև ' + cfg().maxDays + ' օր առաջ։'; }
+    else if (!v.room) msg = 'Ընտրեք տարածքը՝ օրվա զբաղվածությունը տեսնելու համար։';
+    else if (clash.length) { cls = 'bad'; msg = 'Այս ժամին զբաղված է՝ ' + hm(clash[0].s) + '-' + hm(clash[0].e) + ' · ' + clash[0].text; }
+    else {
+      cls = 'ok'; ready = true;
+      var need = !v.purpose && !v.group;
+      msg = 'Ազատ է ✓ ' + v.room + ' · ' + SHORT[dayOfIso(v.date)] + ' ' + dm(fromIso(v.date)) + ' · ' + hm(v.s) + '-' + hm(v.e) +
+        (need ? (!$('bkGroupFld').hidden ? '։ Ընտրեք խումբը կամ գրեք, թե ինչի համար է։' : '։ Գրեք, թե ինչի համար է։') : '');
+    }
+    box.className = 'avail ' + cls; box.textContent = msg;
+    $('bkSubmit').disabled = !ready || (!v.purpose && !v.group) || bk.sending;
+  }
+  function openBook(pre){
+    pre = pre || {};
+    var M = me(), c = cfg(), min = todayDate();
+    var d = pre.date ? fromIso(pre.date) : (state.monday > min ? new Date(state.monday) : min);
+    if (d < min) d = min;
+    $('bkDate').min = isoOf(min);
+    $('bkDate').max = isoOf(addDays(min, c.maxDays));
+    $('bkDate').value = isoOf(d);
+    var st = pre.start != null ? pre.start : (isoOf(d) === isoOf(min) ? Math.ceil((nowMin() + 1) / 60) * 60 : 10 * 60);
+    st = Math.max(mins(c.open), Math.min(st, mins(c.close) - 60));
+    var en = pre.end != null ? pre.end : st + 60;
+    fillTimes(st, en);
+    bk.dur = (+$('bkEnd').value) - (+$('bkStart').value);
+    fillRooms(pre.room || '');
+    fillGroups(state.group);
+    $('bkPurpose').value = '';
+    $('bkName').value = state.name || M.name || '';
+    $('bkWho').textContent = M.email ? 'Ամրագրողը՝ ' + M.email : 'Ձեր հաշիվը չի ճանաչվել';
+    $('bkRule').textContent = c.approval && !M.isAdmin ? 'Կհաստատի ադմինիստրատորը' : 'Հաստատվում է անմիջապես';
+    bk.err = ''; bk.sending = false;
+    $('bkSubmit').textContent = submitLabel();
+    updateBook();
+    showDlg($('bkDlg'));
+    setTimeout(function(){ (!$('bkRoom').value ? $('bkRoom') : !$('bkGroupFld').hidden && !$('bkGroup').value ? $('bkGroup') : $('bkPurpose')).focus(); }, 40);
+  }
+  function openFromSlot(b){
+    var day = +b.getAttribute('data-bk-day'), time = b.getAttribute('data-bk-time'), room = b.getAttribute('data-bk-room') || '';
+    var W = week(), si = W ? slotIndex(W, day, time) : -1, iso = isoOf(addDays(state.monday, day));
+    var blk = si >= 0 ? slotBlock(W, si) : {s: mins(time), e: mins(time) + 60};
+    var s = blk.s;
+    if (iso === isoOf(new Date())) s = Math.max(s, q15(nowMin() + 1));
+    var e = Math.min(blk.e, s + 60); if (e - s < 30) e = s + 60;
+    openBook({room: room, date: iso, start: s, end: e});
+  }
+  function bkChanged(){ bk.err = ''; }
+  $('bkDate').onchange = function(){ bkChanged(); fillRooms($('bkRoom').value); updateBook(); };
+  $('bkStart').onchange = function(){ bkChanged(); var s = +this.value; fillTimes(s, s + bk.dur); fillRooms($('bkRoom').value); updateBook(); };
+  $('bkEnd').onchange = function(){ bkChanged(); bk.dur = (+this.value) - (+$('bkStart').value); fillRooms($('bkRoom').value); updateBook(); };
+  $('bkRoom').onchange = function(){ bkChanged(); updateBook(); };
+  $('bkGroup').onchange = function(){ bkChanged(); purposeHint(); updateBook(); };
+  $('bkPurpose').oninput = function(){ bkChanged(); updateBook(); };
+  $('bkName').oninput = function(){ if (bk.err) { bkChanged(); updateBook(); } };
+  $('bkDlg').onclick = function(e){ if (e.target === this || e.target.closest('[data-close]')) closeDlg(this); };
+  $('bkForm').onsubmit = function(ev){
+    ev.preventDefault();
+    if ($('bkSubmit').disabled || bk.sending) return;
+    var v = readBook();
+    bk.sending = true; bk.err = '';
+    $('bkSubmit').disabled = true; $('bkSubmit').textContent = 'Ուղարկվում է…';
+    if (v.name) state.name = v.name;
+    state.group = v.group; persist();
+    google.script.run
+      .withSuccessHandler(function(json){
+        bk.sending = false;
+        var b = JSON.parse(json).booking;
+        b.mine = true;
+        state.data.bookings = allBookings().concat([b]);
+        closeDlg($('bkDlg'));
+        state.monday = mondayOf(fromIso(b.date)); state.mDay = null; state.freeDay = null;
+        render();
+        toast(b.status === 'wait' ? 'Հայտն ուղարկվեց ադմինիստրատորին' : 'Ամրագրված է՝ ' + b.room + ', ' + SHORT[dayOfIso(b.date)] + ' ' + dm(fromIso(b.date)) + ' ' + b.start + '-' + b.end);
+        load('quick');
+      })
+      .withFailureHandler(function(err){
+        bk.sending = false; bk.err = errText(err);
+        $('bkSubmit').textContent = submitLabel();
+        updateBook();
+        load('full');
+      })
+      .createBooking({room: v.room, date: v.date, start: hm(v.s), end: hm(v.e), purpose: v.purpose, name: v.name, group: v.group});
+  };
+
+  /* ---------- booking details: cancel, approve, reject ---------- */
+  function openView(id, action){
+    var b = findB(id); if (!b) return;
+    bv = {b: b, action: action || '', busy: false, err: '', reason: ''};
+    renderView(); showDlg($('bvDlg'));
+    if (action === 'reject') setTimeout(function(){ var t = $('bvReason'); if (t) t.focus(); }, 40);
+  }
+  function renderView(){
+    var b = bv.b, M = me(), d = fromIso(b.date), di = dayOfIso(b.date), up = upcoming(b);
+    var canDecide = b.status === 'wait' && M.isAdmin && up, canCancel = activeB(b) && up && (b.mine || M.isAdmin) && !(canDecide && !b.mine);
+    var grid = activeB(b) ? clashes(b.room, b.date, mins(b.start), mins(b.end), b.id).filter(function(x){ return x.kind === 'grid'; }) : [];
+    var h = '<div class="dlg-head"><div><h2 id="bvTitle">' + esc(b.room) + '</h2><p>' + DAYS[di] + ', ' + dm(d) + '.' + d.getFullYear() + ' · <span class="mono">' + b.start + '-' + b.end + '</span></p></div>' +
+      '<button type="button" class="xbtn" data-close aria-label="Փակել">&times;</button></div>';
+    h += '<dl class="kv">' + (b.group ? '<dt>Խումբ</dt><dd><b>' + esc(b.group) + '</b></dd>' : '') + '<dt>Նպատակ</dt><dd>' + esc(b.purpose || '-') + '</dd><dt>Ով</dt><dd>' + esc(b.name || '-') + (b.email ? ' <span class="fine">' + esc(b.email) + '</span>' : '') + (b.mine ? ' <span class="fine">(դուք)</span>' : '') + '</dd>' +
+      '<dt>Կարգավիճակ</dt><dd><em class="bktag ' + b.status + '">' + ST_LABEL[b.status] + '</em></dd></dl>';
+    if (grid.length) h += '<p class="avail bad">Համընկնում է ժամանակացույցի հետ՝ ' + hm(grid[0].s) + '-' + hm(grid[0].e) + ' · ' + esc(grid[0].text) + '</p>';
+    if (bv.err) h += '<p class="avail bad">' + esc(bv.err) + '</p>';
+    var dis = bv.busy ? ' disabled' : '';
+    if (bv.action === 'cancel') {
+      h += '<div class="confirm">Չեղարկե՞լ այս ամրագրումը։' + (b.mine ? '' : ' ' + esc(b.name || 'Ամրագրողը') + '-ը նամակ կստանա։') +
+        '<div class="dlg-foot"><button type="button" class="ghost" data-vact="back"' + dis + '>Ոչ</button><button type="button" class="primary" data-vact="do-cancel"' + dis + '>' + (bv.busy ? 'Չեղարկվում է…' : 'Այո, չեղարկել') + '</button></div></div>';
+    } else if (bv.action === 'reject') {
+      h += '<div class="confirm"><label class="fld"><span>Պատճառ (կտեսնի ամրագրողը, պարտադիր չէ)</span><textarea id="bvReason" maxlength="200"></textarea></label>' +
+        '<div class="dlg-foot"><button type="button" class="ghost" data-vact="back"' + dis + '>Ետ</button><button type="button" class="primary" data-vact="do-reject"' + dis + '>' + (bv.busy ? 'Ուղարկվում է…' : 'Մերժել հայտը') + '</button></div></div>';
+    } else {
+      var f = '';
+      if (canCancel) f += '<button type="button" class="ghost bad" data-vact="cancel"' + dis + '>Չեղարկել ամրագրումը</button>';
+      if (canDecide) f += '<button type="button" class="ghost" data-vact="reject"' + dis + '>Մերժել</button><button type="button" class="primary" data-vact="do-approve"' + dis + '>' + (bv.busy ? 'Հաստատվում է…' : 'Հաստատել') + '</button>';
+      h += '<div class="dlg-foot">' + (f || '<button type="button" class="ghost" data-close>Փակել</button>') + '</div>';
+    }
+    $('bvBody').innerHTML = h;
+    var t = $('bvReason'); if (t && bv.reason) t.value = bv.reason;
+  }
+  var ACT = {approve: ['approveBooking', 'Ամրագրումը հաստատվեց'], cancel: ['cancelBooking', 'Ամրագրումը չեղարկվեց'], reject: ['rejectBooking', 'Հայտը մերժվեց']};
+  function act(kind, id, reason){
+    var a = ACT[kind], inDlg = !!($('bvDlg').open && bv && bv.b.id === id);
+    if (inDlg) { bv.busy = true; bv.err = ''; bv.reason = reason || ''; renderView(); }
+    var run = google.script.run
+      .withSuccessHandler(function(json){
+        var r = JSON.parse(json), b = findB(id);
+        if (b) b.status = r.status;
+        if (inDlg) { bv.busy = false; closeDlg($('bvDlg')); }
+        render(); toast(a[1]); load('quick');
+      })
+      .withFailureHandler(function(err){
+        if (inDlg) { bv.busy = false; bv.err = errText(err); renderView(); } else toast(errText(err));
+        load('quick');
+      });
+    if (kind === 'reject') run.rejectBooking(id, reason || ''); else run[a[0]](id);
+  }
+  $('bvDlg').onclick = function(e){
+    if (e.target === this || e.target.closest('[data-close]')) { closeDlg(this); return; }
+    var b = e.target.closest('[data-vact]'); if (!b || !bv || bv.busy) return;
+    var a = b.getAttribute('data-vact');
+    if (a === 'back') { bv.action = ''; bv.err = ''; renderView(); }
+    else if (a === 'cancel' || a === 'reject') { bv.action = a; bv.err = ''; renderView(); if (a === 'reject') { var t0 = $('bvReason'); if (t0) t0.focus(); } }
+    else if (a === 'do-cancel') act('cancel', bv.b.id);
+    else if (a === 'do-reject') { var t = $('bvReason'); act('reject', bv.b.id, t ? t.value : ''); }
+    else if (a === 'do-approve') act('approve', bv.b.id);
+  };
+  $('bookBtn').onclick = function(){ openBook(); };
+
+  /* ---------- moving my group to another room ---------- */
+  var mvs = null;
+  function openMove(i){
+    var W = week(), x = state.progS && state.progS[i];
+    if (!W || !x) return;
+    mvs = {x: x, W: W, to: '', busy: false, err: ''};
+    renderMove(); showDlg($('mvDlg'));
+  }
+  function renderMove(){
+    var x = mvs.x, W = mvs.W, d = addDays(state.monday, x.day), free = freeRoomsFor(W, x);
+    if (mvs.to && !free.some(function(r){ return r.name === mvs.to; })) mvs.to = '';
+    var h = '<div class="dlg-head"><div><h2 id="mvTitle">Փոխել տարածքը</h2><p>' + DAYS[x.day] + ', ' + dm(d) + '.' + d.getFullYear() + ' · <span class="mono">' + hm(x.s) + '-' + hm(x.e) + '</span></p></div>' +
+      '<button type="button" class="xbtn" data-close aria-label="Փակել">&times;</button></div>';
+    h += '<dl class="kv"><dt>Դաս</dt><dd><b>' + esc(x.text) + '</b></dd><dt>Հիմա</dt><dd><i class="dot" style="--c:' + x.rc + '"></i> ' + esc(x.room) + '</dd></dl>';
+    if (free.length) {
+      h += '<label class="fld full"><span>Նոր տարածք (ազատ է այդ ժամին)</span><select id="mvTo"><option value="">Ընտրեք տարածքը</option>' +
+        free.map(function(r){
+          var desc = r.desc ? ' - ' + (r.desc.length > 36 ? r.desc.slice(0, 35) + '…' : r.desc) : '';
+          return '<option value="' + esc(r.name) + '"' + (r.name === mvs.to ? ' selected' : '') + '>' + esc(r.name + desc) + '</option>';
+        }).join('') + '</select></label>';
+    } else h += '<p class="avail bad">Այդ ժամին ազատ տարածք չկա։</p>';
+    h += '<p class="fine">Փոփոխությունը կգրվի միայն «' + esc(String(W.source).trim()) + '» թերթիկում՝ դեղին գույնով, և ադմինիստրատորը նամակ կստանա։ Մյուս շաբաթները չեն փոխվի։</p>';
+    if (mvs.err) h += '<p class="avail bad">' + esc(mvs.err) + '</p>';
+    h += '<div class="dlg-foot"><button type="button" class="ghost" data-close>Փակել</button>' +
+      '<button type="button" class="primary" data-mvgo' + (mvs.to && !mvs.busy ? '' : ' disabled') + '>' + (mvs.busy ? 'Տեղափոխվում է…' : 'Տեղափոխել') + '</button></div>';
+    $('mvBody').innerHTML = h;
+  }
+  /* show the move at once; the full reload that follows brings the sheet as it is now */
+  function patchMove(r){
+    var d = state.data, w = null;
+    if (!d) return;
+    d.weeks.forEach(function(x){ if (x.day === state.monday.getDate() && x.month === state.monday.getMonth() + 1) w = x; });
+    if (!w) return;
+    var g = w.grid, src = null, dst = null;
+    g.rooms.forEach(function(rm){ if (rkey(rm.name) === rkey(r.from)) src = rm; if (rkey(rm.name) === rkey(r.to)) dst = rm; });
+    if (!src || !dst) return;
+    r.parts.forEach(function(pt){
+      var si = -1;
+      g.slots.forEach(function(s, i){ if (si < 0 && s.day === r.day && s.time === pt.time) si = i; });
+      if (si < 0) return;
+      var lines = String(src.cells[si] || '').split(NL), gone = false;
+      lines = lines.filter(function(x){ if (!gone && x.trim() === pt.line) { gone = true; return false; } return !!x.trim(); });
+      src.cells[si] = lines.join(NL);
+      if (!lines.length && src.colors) src.colors[si] = '';
+      dst.cells[si] = pt.line;
+      if (dst.colors) dst.colors[si] = r.color;
+    });
+    progMemo.data = undefined;
+  }
+  function doMove(){
+    var x = mvs.x;
+    mvs.busy = true; mvs.err = ''; renderMove();
+    google.script.run
+      .withSuccessHandler(function(json){
+        var r = JSON.parse(json);
+        patchMove(r);
+        mvs.busy = false; closeDlg($('mvDlg'));
+        render();
+        toast('Տեղափոխվեց՝ ' + r.from + ' → ' + r.to + ', ' + SHORT[r.day] + ' ' + r.start);
+        load('full');
+      })
+      .withFailureHandler(function(err){ mvs.busy = false; mvs.err = errText(err); renderMove(); })
+      .moveSession({monday: isoOf(state.monday), day: x.day, room: x.room, to: mvs.to,
+        parts: x.parts.map(function(pt){ return {time: pt.time, line: pt.line}; })});
+  }
+  $('mvDlg').onclick = function(e){
+    if (e.target === this || e.target.closest('[data-close]')) { if (!mvs || !mvs.busy) closeDlg(this); return; }
+    if (e.target.closest('[data-mvgo]') && mvs && mvs.to && !mvs.busy) doMove();
+  };
+  $('mvDlg').onchange = function(e){ if (e.target && e.target.id === 'mvTo' && mvs) { mvs.to = e.target.value; mvs.err = ''; renderMove(); } };
+
+  /* ---------- events ---------- */
+  function shiftWeek(n){ state.monday = addDays(state.monday, 7 * n); state.mDay = null; state.freeDay = null; render(); }
+  $('prevWeek').onclick = function(){ shiftWeek(-1); };
+  $('nextWeek').onclick = function(){ shiftWeek(1); };
+  /* Light / dark: follows the device until someone picks one; the choice is remembered. */
+  var SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>';
+  var MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>';
+  var darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+  function isDark(){ return state.theme === 'dark' || (state.theme !== 'light' && darkMq.matches); }
+  function applyTheme(){
+    var root = document.documentElement;
+    if (state.theme === 'light' || state.theme === 'dark') root.setAttribute('data-theme', state.theme);
+    else root.removeAttribute('data-theme');
+    var d = isDark(), b = $('themeBtn');
+    b.innerHTML = d ? SUN : MOON;
+    b.setAttribute('aria-label', d ? 'Բաց թեմա' : 'Մուգ թեմա');
+    b.title = d ? 'Բաց թեմա' : 'Մուգ թեմա';
+  }
+  $('themeBtn').onclick = function(){ state.theme = isDark() ? 'light' : 'dark'; persist(); applyTheme(); };
+  if (darkMq.addEventListener) darkMq.addEventListener('change', applyTheme);
+  applyTheme();
+  $('thisWeek').onclick = function(){ state.monday = mondayOf(new Date()); state.mDay = null; state.freeDay = null; render(); };
+  $('refresh').onclick = function(){ load('full'); };
+  document.querySelector('.seg').onclick = function(e){
+    var b = e.target.closest('button[data-view]'); if (!b) return;
+    state.view = b.getAttribute('data-view'); persist(); render();
+  };
+  $('sort').value = state.sort;
+  $('sort').onchange = function(){ state.sort = this.value; persist(); render(); };
+  var qTimer;
+  $('q').oninput = function(){ var v = this.value; clearTimeout(qTimer); qTimer = setTimeout(function(){ state.q = v.trim().toLowerCase(); render(); }, 120); };
+  function toggleRoom(n){
+    if (!n) state.rooms = [];
+    else { var i = state.rooms.indexOf(n); if (i >= 0) state.rooms.splice(i, 1); else state.rooms.push(n); }
+    persist(); render();
+  }
+  $('roomChips').onclick = function(e){
+    var b = e.target.closest('button[data-room]'); if (b) toggleRoom(b.getAttribute('data-room'));
+  };
+  $('roomBtn').onclick = function(){ var o = popOpen('roomPop'); closePops(); setPop('roomPop', !o); };
+  $('legendBtn').onclick = function(){ var o = popOpen('legend'); closePops(); setPop('legend', !o); };
+  $('roomPop').onchange = function(e){
+    var c = e.target.closest('input[data-room]'); if (!c) return;
+    var n = c.getAttribute('data-room');
+    toggleRoom(n);
+    /* the list was drawn again: keep the keyboard on the same box */
+    var again = [].filter.call($('roomPop').querySelectorAll('input[data-room]'), function(x){ return x.getAttribute('data-room') === n; })[0];
+    if (again) again.focus();
+  };
+  $('roomPop').onclick = function(e){
+    if (e.target.closest('[data-all]')) { toggleRoom(''); $('roomBtn').focus(); }
+  };
+  /* a click outside the filter row, or Esc, closes an open list */
+  document.addEventListener('click', function(e){
+    if (!popOpen('roomPop') && !popOpen('legend')) return;
+    if (!document.contains(e.target) || $('frow').contains(e.target)) return;
+    closePops();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape') return;
+    var id = popOpen('roomPop') ? 'roomPop' : popOpen('legend') ? 'legend' : '';
+    if (!id) return;
+    e.preventDefault(); closePops(); $(id === 'roomPop' ? 'roomBtn' : 'legendBtn').focus();
+  });
+  $('view').onclick = function(e){
+    var mvb = e.target.closest('button[data-mv]');
+    if (mvb) { openMove(+mvb.getAttribute('data-mv')); return; }
+    var bi = e.target.closest('[data-bid]');
+    if (bi) { openView(bi.getAttribute('data-bid')); return; }
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-bk-time')) { openFromSlot(b); return; }
+    if (b.hasAttribute('data-newbk')) { openBook(); return; }
+    if (b.hasAttribute('data-act')) {
+      var k = b.getAttribute('data-act'), id = b.getAttribute('data-id');
+      if (k === 'approve') { b.disabled = true; act('approve', id); } else openView(id, k);
+      return;
+    }
+    if (b.hasAttribute('data-mday')) { state.mDay = +b.getAttribute('data-mday'); render(); }
+    else if (b.hasAttribute('data-fday')) { state.freeDay = +b.getAttribute('data-fday'); state.freeTime = null; render(); }
+    else if (b.hasAttribute('data-ftime')) { state.freeTime = b.getAttribute('data-ftime'); render(); }
+    else if (b.hasAttribute('data-only')) {
+      var n = b.getAttribute('data-only');
+      state.rooms = state.rooms.length === 1 && state.rooms[0] === n ? [] : [n];
+      persist(); render(); window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+  };
+  $('view').onchange = function(e){
+    if (e.target && e.target.id === 'progSel') { state.prog = e.target.value; persist(); render(); }
+  };
+  $('view').onkeydown = function(e){
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-bid]')) { e.preventDefault(); openView(e.target.getAttribute('data-bid')); }
+  };
+  if (mq.addEventListener) mq.addEventListener('change', render);
+  setInterval(function(){ load('full'); }, 5 * 60 * 1000);
+  setInterval(function(){ if (state.data) render(); }, 60 * 1000);
+  render();
+  load();
+})();
+</script>
+</body>
+</html>
